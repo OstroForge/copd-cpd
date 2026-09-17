@@ -114,6 +114,7 @@ def requested_join(handler: SimpleHTTPRequestHandler) -> str:
 def public_poll() -> dict:
     if POLL.get("kind") == "news2":
         scale1 = scale2 = correct = 0
+        spread_counts = {}
         for vote in POLL["votes"].values():
             if not isinstance(vote, dict):
                 continue
@@ -126,6 +127,10 @@ def public_poll() -> dict:
                 and vote.get("total") == POLL.get("expectedTotal")
             ):
                 correct += 1
+            total = vote.get("total")
+            if isinstance(total, int):
+                spread_counts[total] = spread_counts.get(total, 0) + 1
+        revealed = POLL["revealed"]
         out = {
             "live": True,
             "kind": "news2",
@@ -134,16 +139,22 @@ def public_poll() -> dict:
             "obs": POLL.get("obs") or {},
             "options": [],
             "open": POLL["open"],
-            "revealed": POLL["revealed"],
+            "revealed": revealed,
             "total": len(POLL["votes"]),
             "counts": [],
-            "scale1": scale1,
-            "scale2": scale2,
-            "correctScale1": correct,
+            "scale1": scale1 if revealed else 0,
+            "scale2": scale2 if revealed else 0,
+            "correctScale1": correct if revealed else 0,
+            "correctCount": correct if revealed else 0,
+            "spread": (
+                [{"total": k, "n": spread_counts[k]} for k in sorted(spread_counts)]
+                if revealed
+                else []
+            ),
             "correct": None,
-            "teach": POLL["teach"] if POLL["revealed"] else "",
+            "teach": POLL["teach"] if revealed else "",
         }
-        if POLL["revealed"]:
+        if revealed:
             out["expectedTotal"] = POLL.get("expectedTotal")
             out["expectedScale"] = POLL.get("expectedScale")
         return out
@@ -152,6 +163,7 @@ def public_poll() -> dict:
     for choice in POLL["votes"].values():
         if isinstance(choice, int) and 0 <= choice < len(counts):
             counts[choice] += 1
+    revealed = POLL["revealed"]
     return {
         "live": True,
         "kind": "choice",
@@ -159,11 +171,11 @@ def public_poll() -> dict:
         "prompt": POLL["prompt"],
         "options": options,
         "open": POLL["open"],
-        "revealed": POLL["revealed"],
-        "counts": counts,
+        "revealed": revealed,
+        "counts": counts if revealed else [0] * len(options),
         "total": sum(counts),
-        "correct": POLL["correct"] if POLL["revealed"] else None,
-        "teach": POLL["teach"] if POLL["revealed"] else "",
+        "correct": POLL["correct"] if revealed else None,
+        "teach": POLL["teach"] if revealed else "",
     }
 
 
@@ -349,7 +361,7 @@ class Handler(SimpleHTTPRequestHandler):
                     POLL["options"] = options if kind == "choice" else []
                     correct = data.get("correct")
                     POLL["correct"] = int(correct) if isinstance(correct, int) else None
-                    POLL["teach"] = str(data.get("teach") or "")[:800]
+                    POLL["teach"] = str(data.get("teach") or "")[:1200]
                     if kind == "news2":
                         try:
                             POLL["expectedTotal"] = int(data.get("expectedTotal"))

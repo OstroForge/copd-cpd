@@ -699,6 +699,32 @@
     .n2-bands .r { background: #b42318; }
     .n2-bands button { cursor: pointer; }
     .n2-bands button.sel { outline: 3px solid #f0c36a; outline-offset: -3px; }
+    .n2-bands.n2-spo2-2 span,
+    .n2-bands.n2-spo2-2 button { font-size: 9px; line-height: 1.1; }
+    .n2-bands.n2-spo2-2 { min-height: 42px; }
+    .poll-slide:not(.poll-results) .poll-n,
+    .poll-slide:not(.poll-results) .poll-bar { visibility: hidden; }
+    .poll-results .poll-teach { display: block; }
+    .n2-spread-title {
+      font-size: 15px;
+      color: var(--navy);
+      margin: 8px 0 6px;
+    }
+    .n2-spread { display: flex; flex-direction: column; gap: 6px; }
+    .n2-spread-row {
+      display: grid;
+      grid-template-columns: 88px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 15px;
+      font-weight: 650;
+      color: var(--navy);
+    }
+    .n2-spread-row i {
+      display: block;
+      height: 14px;
+      background: var(--navy-2);
+    }
     .n2-scale-pick { display: flex; gap: 8px; margin: 8px 0; }
     .n2-scale-pick button {
       flex: 1;
@@ -871,43 +897,94 @@
   </div>
 
   <script>
-    const slides = [
+    const slideSource = [
       {
         type: "title",
         kicker: "Ambulance CPD  ·  25 minutes",
         title: "COPD, Type 2 Respiratory Failure and NEWS2",
         subtitle: "Pre-hospital assessment and treatment of acute exacerbations, with a hard look at NEWS2 Scale 2.",
         meta: "JRCALC G0390 v20.40 (updated 6 September 2023), JRCALC oxygen and medicines, and RCP NEWS2. Always follow the live JRCALC entry and local Trust policy.",
-        notes: "Open with the title statement. Do not bury the learning point. Next slide is the live NEWS2 case. Leave it up while phones scan the QR."
+        notes: "Open with the title statement. Next slide is patient 1 — documented type 2 failure. Leave it up while phones scan the QR."
       },
       {
         type: "poll",
-        pollId: "q-case",
+        pollId: "q-t2",
         layout: "news2",
         kind: "news2",
-        expectedScale: 1,
-        expectedTotal: 6,
-        kicker: "Your turn  ·  live NEWS2",
-        title: "75, known COPD — score this patient",
-        prompt: "Score every NEWS2 category on your phone. Use Scale 1 or Scale 2 for SpO<sub>2</sub>. We want how many people get the correct total on Scale 1.",
+        expectedScale: 2,
+        expectedTotal: 7,
+        resultsTitle: "How the room scored patient 1",
+        kicker: "Live NEWS2  ·  patient 1",
+        title: "62, known COPD — score this patient",
+        prompt: "Score every NEWS2 category on your phone. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap each row.",
         votePrompt: "Score this patient on NEWS2. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap every category.",
         options: [],
         obs: {
-          hx: "75, known COPD. Not on home oxygen. Increased SOB and secretions. Talking in short sentences. No alert card. No documented type 2 failure.",
-          rr: "22 /min",
-          spo2: "90% on air",
-          o2: "Air",
-          sbp: "138 mmHg",
-          pulse: "98 /min",
+          hx: "62, known COPD. Alert card: previous type 2 respiratory failure, target 88–92%. Currently on 28% Venturi. Increased SOB. No pyrexia.",
+          rr: "24 /min",
+          spo2: "96% on oxygen",
+          o2: "Oxygen (28% Venturi)",
+          sbp: "118 mmHg",
+          pulse: "92 /min",
           con: "Alert",
-          temp: "36.7 °C"
+          temp: "36.5 °C"
         },
         detail: `
           <div class="poll-detail">
             <div class="poll-facts">
               <h3>On scene</h3>
               <ul>
-                <li>75 years old, known COPD</li>
+                <li>62 years old, known COPD</li>
+                <li>Alert card: previous type 2 respiratory failure, target 88–92%</li>
+                <li>Currently on 28% Venturi</li>
+                <li>Increased shortness of breath</li>
+                <li>No pyrexia</li>
+              </ul>
+              <h3 style="margin-top:8px">Observations to score</h3>
+              <ul>
+                <li>RR <strong>24</strong></li>
+                <li>SpO<sub>2</sub> <strong>96% on oxygen</strong></li>
+                <li>SBP <strong>118</strong></li>
+                <li>Pulse <strong>92</strong></li>
+                <li>Consciousness <strong>Alert</strong></li>
+                <li>Temp <strong>36.5 °C</strong></li>
+              </ul>
+              <p class="small" style="margin-top:8px">Teaching bands, not the official RCP NEWS2 chart. Scale 2 SpO<sub>2</sub> depends on air vs oxygen. Phones tap the chart.</p>
+            </div>
+            <div class="n2-chart-slot"></div>
+          </div>`,
+        teach: "<strong>NEWS 7 on Scale 2.</strong> Type 2 failure is already documented on the alert card, so Scale 2 is the SpO<sub>2</sub> scale — not because they have COPD. RR 24 scores 2. SpO<sub>2</sub> 96% <strong>on oxygen</strong> scores 2 on Scale 2 (95–96 on oxygen); on air, ≥93% would score 0. On Scale 1, 96% scores 0. Oxygen scores 2, pulse 92 scores 1. Total <strong>7</strong>. Still target 88–92%.",
+        notes: "Leave this up while phones score. Do not talk through Scale 2 yet. Space goes to the results. Correct is NEWS 7 on Scale 2. Typical error: Scale 1 because they are ‘just COPD’, so 96% scores 0."
+      },
+      {
+        type: "poll",
+        pollId: "q-not2",
+        layout: "news2",
+        kind: "news2",
+        expectedScale: 1,
+        expectedTotal: 6,
+        resultsTitle: "How the room scored patient 2",
+        kicker: "Live NEWS2  ·  patient 2",
+        title: "78, known COPD — score this patient",
+        prompt: "Score every NEWS2 category on your phone. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap each row.",
+        votePrompt: "Score this patient on NEWS2. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap every category.",
+        options: [],
+        obs: {
+          hx: "78, known COPD. Not on home oxygen. Increased SOB and secretions. Talking in short sentences. No alert card. No documented type 2 failure.",
+          rr: "22 /min",
+          spo2: "90% on air",
+          o2: "Air",
+          sbp: "152 mmHg",
+          pulse: "104 /min",
+          con: "Alert",
+          temp: "36.9 °C"
+        },
+        detail: `
+          <div class="poll-detail">
+            <div class="poll-facts">
+              <h3>On scene</h3>
+              <ul>
+                <li>78 years old, known COPD</li>
                 <li>Not on home oxygen</li>
                 <li>Increased shortness of breath and secretions</li>
                 <li>No pyrexia</li>
@@ -918,17 +995,17 @@
               <ul>
                 <li>RR <strong>22</strong></li>
                 <li>SpO<sub>2</sub> <strong>90% on air</strong></li>
-                <li>SBP <strong>138</strong></li>
-                <li>Pulse <strong>98</strong></li>
+                <li>SBP <strong>152</strong></li>
+                <li>Pulse <strong>104</strong></li>
                 <li>Consciousness <strong>Alert</strong></li>
-                <li>Temp <strong>36.7 °C</strong></li>
+                <li>Temp <strong>36.9 °C</strong></li>
               </ul>
-              <p class="small" style="margin-top:8px">Teaching bands, not the official RCP NEWS2 chart. Phones tap the chart. The number that matters is how many get NEWS 6 on Scale 1.</p>
+              <p class="small" style="margin-top:8px">Teaching bands, not the official RCP NEWS2 chart. Scale 2 SpO<sub>2</sub> depends on air vs oxygen. Phones tap the chart.</p>
             </div>
             <div class="n2-chart-slot"></div>
           </div>`,
-        teach: "<strong>NEWS 6 on Scale 1.</strong> COPD, extra secretions and 90% on air do not document type 2 failure, so Scale 2 is not available. RR 22 scores 2, SpO<sub>2</sub> 90% scores 3, air 0, SBP 138 scores 0, pulse 98 scores 1, Alert 0, temp 36.7 scores 0. Total <strong>6</strong>. Scale 2 would score 90% as 0 and give NEWS <strong>3</strong>, hiding the hypoxia. Still target 88–92%. Handover the scale you used.",
-        notes: "This is the live question. Leave it up while phones scan the QR or use the Teams join link. Watch Scale 1 vs Scale 2. The figure you care about is how many got NEWS 6 on Scale 1. Typical error: Scale 2 because they have COPD, so 90% scores 0. Space reveals."
+        teach: "<strong>NEWS 6 on Scale 1.</strong> COPD, extra secretions and 90% on air do not document type 2 failure, so Scale 2 is not available. RR 22 scores 2, SpO<sub>2</sub> 90% on air scores 3, air 0, SBP 152 scores 0, pulse 104 scores 1, Alert 0, temp 36.9 scores 0. Total <strong>6</strong>. Scale 2 would score 90% as 0 (88–92) and give NEWS <strong>3</strong>, hiding the hypoxia. Still target 88–92%.",
+        notes: "Same drill as patient 1. Correct is NEWS 6 on Scale 1. Typical error: Scale 2 because they have COPD, so 90% scores 0."
       },
       {
         kicker: "Purpose",
@@ -1567,7 +1644,7 @@
             <div class="banner dark build" style="margin-top:8px">4. Scale 2 only if a hospital/specialist team has already documented type 2 failure — not an on-scene decision.</div>
             <div class="banner dark build" style="margin-top:8px">5. Never leave a critically ill COPD patient hypoxic.</div>
           </div>`,
-        notes: "Read them slowly. Space reveals each line. If time remains, return to the opening hands-up question and see if the hands have changed."
+        notes: "Read them slowly. Space reveals each line."
       },
       {
         kicker: "Sources",
@@ -1606,6 +1683,18 @@
       }
     ];
 
+    const slides = slideSource.flatMap((s) => {
+      if (s.type !== "poll") return [s];
+      return [s, {
+        type: "poll-results",
+        pollId: s.pollId,
+        layout: s.layout || "",
+        kicker: "Results",
+        title: s.resultsTitle || "How the room voted",
+        notes: "The audience did not see these numbers on the question. Talk through the spread, then move on."
+      }];
+    });
+
     const NEWS2_SPO2 = {
       1: [
         { s: 3, c: "r", t: "≤91%" },
@@ -1618,9 +1707,10 @@
         { s: 2, c: "a", t: "84–85" },
         { s: 1, c: "y", t: "86–87" },
         { s: 0, c: "g", t: "88–92" },
-        { s: 1, c: "y", t: "93–94" },
-        { s: 2, c: "a", t: "95–96" },
-        { s: 3, c: "r", t: "≥97%" }
+        { s: 0, c: "g", t: "≥93%<br>on air" },
+        { s: 1, c: "y", t: "93–94<br>on oxygen" },
+        { s: 2, c: "a", t: "95–96<br>on oxygen" },
+        { s: 3, c: "r", t: "≥97%<br>on oxygen" }
       ]
     };
     const NEWS2_ROWS = [
@@ -1655,7 +1745,7 @@
       const rows = NEWS2_ROWS.map((row) => `
         <div class="n2-row">
           <div class="n2-lab">${row.label}</div>
-          <div class="n2-bands">${news2BandsHtml(row.bands)}</div>
+          <div class="n2-bands${row.key === "spo2-2" ? " n2-spo2-2" : ""}">${news2BandsHtml(row.bands)}</div>
         </div>`).join("");
       return `<div class="n2-chart"><p class="n2-caption">Teaching NEWS2 bands — not the official RCP chart</p>${rows}</div>`;
     }
@@ -1736,13 +1826,7 @@
             <span class="poll-bar"><i></i></span>
           </div>`).join("");
         const layout = s.layout ? ` poll-${s.layout}` : "";
-        const results = s.layout === "news2" ? `
-          <div class="n2-live">
-            <div class="n2-stat"><span class="poll-total">0</span><label>phones in</label></div>
-            <div class="n2-stat"><span class="n2-s1">0</span><label>used Scale 1</label></div>
-            <div class="n2-stat"><span class="n2-s2">0</span><label>used Scale 2</label></div>
-            <div class="n2-stat n2-stat-ok"><span class="n2-ok">0</span><label>correct NEWS on Scale 1</label></div>
-          </div>` : `<div class="poll-opts">${opts}</div>`;
+        const choices = s.layout === "news2" ? "" : `<div class="poll-opts">${opts}</div>`;
         const detail = s.layout === "news2"
           ? (s.detail || "").replace('<div class="n2-chart-slot"></div>', news2ProjectorChart())
           : (s.detail || "");
@@ -1755,13 +1839,43 @@
               <aside class="poll-join">
                 <img alt="Join the quiz" width="132" height="132" />
                 <p class="poll-url"></p>
-                <p class="poll-phones"><span class="poll-total">0</span> phones in</p>
+                <p class="poll-phones"><span class="poll-total">0</span> responses</p>
               </aside>
             </div>
             ${detail}
-            ${results}
-            <div class="poll-teach">${s.teach}</div>
+            ${choices}
             <p class="poll-host"></p>
+          </div>
+          <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+        </section>`;
+      }
+      if (s.type === "poll-results") {
+        const q = slides.find((x) => x.type === "poll" && x.pollId === s.pollId) || {};
+        const news2 = q.layout === "news2";
+        const opts = (q.options || []).map((label, n) => `
+          <div class="poll-opt" data-i="${n}">
+            <span class="poll-lab">${label}</span>
+            <span class="poll-n">0</span>
+            <span class="poll-bar"><i></i></span>
+          </div>`).join("");
+        const spread = news2 ? `
+          <div class="n2-live">
+            <div class="n2-stat"><span class="poll-total">0</span><label>responses</label></div>
+            <div class="n2-stat"><span class="n2-s1">0</span><label>used Scale 1</label></div>
+            <div class="n2-stat"><span class="n2-s2">0</span><label>used Scale 2</label></div>
+            <div class="n2-stat n2-stat-ok"><span class="n2-ok">0</span><label class="n2-ok-lab">correct NEWS</label></div>
+          </div>
+          <h3 class="n2-spread-title">Spread of NEWS totals</h3>
+          <div class="n2-spread"></div>` : `
+          <p class="poll-phones"><span class="poll-total">0</span> responses</p>
+          <div class="poll-opts">${opts}</div>`;
+        return `<section class="slide poll-slide poll-results${news2 ? " poll-news2" : ""}" data-i="${idx}" data-poll="${s.pollId}">
+          <div class="kicker">${s.kicker}</div>
+          <h2>${s.title}</h2>
+          <div class="body">
+            <p class="poll-prompt">${q.prompt || ""}</p>
+            ${spread}
+            <div class="poll-teach">${q.teach || ""}</div>
           </div>
           <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
@@ -1812,7 +1926,8 @@
 
     function pollRevealed() {
       const s = slides[i];
-      if (!s || s.type !== "poll") return true;
+      if (!s || (s.type !== "poll" && s.type !== "poll-results")) return true;
+      if (s.type === "poll" && slides[i + 1] && slides[i + 1].type === "poll-results") return true;
       const el = stage.querySelectorAll(".slide")[i];
       if (hub.ok) return !!(hub.poll && hub.poll.id === s.pollId && hub.poll.revealed);
       return !!(el && el.classList.contains("revealed"));
@@ -1821,6 +1936,7 @@
     function revealCurrentPoll() {
       const s = slides[i];
       if (!s || s.type !== "poll") return false;
+      if (slides[i + 1] && slides[i + 1].type === "poll-results" && slides[i + 1].pollId === s.pollId) return false;
       if (pollRevealed()) return false;
       if (hub.ok && view !== "audience" && (hub.token || view === "presenter")) hostAction("reveal");
       const el = stage.querySelectorAll(".slide")[i];
@@ -1885,7 +2001,7 @@
       document.body.classList.toggle("live", on);
       document.body.classList.toggle("fallback", !on);
       const hint = on
-        ? "Live quiz · room scans the QR · Teams: paste the join link in chat · Space reveals"
+        ? "Live quiz · room scans the QR · Teams: paste the join link in chat · Space shows results"
         : "Tap an option to reveal. For a live vote in the room or on Teams, run python serve.py.";
       stage.querySelectorAll(".poll-host").forEach((el) => { el.textContent = hint; });
     }
@@ -1952,19 +2068,37 @@
     function paintPoll() {
       const s = slides[i];
       const el = stage.querySelectorAll(".slide")[i];
-      if (!s || s.type !== "poll" || !el) return;
+      if (!s || !el || (s.type !== "poll" && s.type !== "poll-results")) return;
       const poll = hub.poll && hub.poll.id === s.pollId ? hub.poll : null;
       const total = poll ? poll.total : 0;
       el.querySelectorAll(".poll-total").forEach((n) => { n.textContent = String(total); });
-      if (s.layout === "news2") {
+      if (s.type === "poll") return;
+      const q = slides.find((x) => x.type === "poll" && x.pollId === s.pollId) || s;
+      if (q.layout === "news2") {
         const set = (sel, val) => {
           const n = el.querySelector(sel);
           if (n) n.textContent = String(val);
         };
         set(".n2-s1", poll ? (poll.scale1 || 0) : 0);
         set(".n2-s2", poll ? (poll.scale2 || 0) : 0);
-        set(".n2-ok", poll ? (poll.correctScale1 || 0) : 0);
-        if (poll && poll.revealed) el.classList.add("revealed");
+        set(".n2-ok", poll ? (poll.correctCount || poll.correctScale1 || 0) : 0);
+        const okLab = el.querySelector(".n2-ok-lab");
+        if (okLab && poll && poll.expectedScale) {
+          okLab.textContent = `correct NEWS on Scale ${poll.expectedScale}`;
+        }
+        const box = el.querySelector(".n2-spread");
+        if (box) {
+          const spread = (poll && poll.spread) || [];
+          const max = spread.reduce((m, x) => Math.max(m, x.n), 0) || 1;
+          box.innerHTML = spread.length
+            ? spread.map((x) => `
+              <div class="n2-spread-row">
+                <span>NEWS ${x.total}</span>
+                <i style="width:${Math.round((x.n / max) * 100)}%"></i>
+                <b>${x.n}</b>
+              </div>`).join("")
+            : "<p class=\"small\">Waiting for scores…</p>";
+        }
         if (poll && poll.teach) {
           const teach = el.querySelector(".poll-teach");
           if (teach) teach.innerHTML = poll.teach;
@@ -1979,7 +2113,6 @@
         if (barFill) barFill.style.width = total ? `${Math.round((c / total) * 100)}%` : "0%";
         opt.classList.toggle("is-correct", !!(poll && poll.revealed && poll.correct === n));
       });
-      if (poll && poll.revealed) el.classList.add("revealed");
       if (poll && poll.teach) {
         const teach = el.querySelector(".poll-teach");
         if (teach) teach.innerHTML = poll.teach;
@@ -2015,7 +2148,7 @@
       if (!hub.token && view !== "presenter") return;
       const s = slides[i];
       if (s && s.type === "poll") {
-        if (lastHostId === s.pollId && hub.poll && hub.poll.id === s.pollId) return;
+        if (lastHostId === s.pollId && hub.poll && hub.poll.id === s.pollId && hub.poll.open) return;
         lastHostId = s.pollId;
         const payload = {
           id: s.pollId,
@@ -2031,6 +2164,11 @@
           payload.obs = s.obs || {};
         }
         await hostAction("start", payload);
+        return;
+      }
+      if (s && s.type === "poll-results") {
+        lastHostId = s.pollId + ":results";
+        await hostAction("reveal");
         return;
       }
       if (lastHostId) {
@@ -2171,7 +2309,9 @@
         const opt = e.target.closest(".poll-opt");
         if (!opt || hub.ok || view === "audience") return;
         const slide = opt.closest(".poll-slide");
-        if (slide && Number(slide.dataset.i) === i) revealCurrentPoll();
+        if (slide && Number(slide.dataset.i) === i) {
+          if (!revealCurrentPoll() && slides[i + 1] && slides[i + 1].type === "poll-results") go(i + 1);
+        }
       });
       probeHub();
       setInterval(tickHub, 700);
@@ -2258,7 +2398,8 @@
             const on = news2.picks[row.key] === n;
             return `<button type="button" class="${b.c}${on ? " sel" : ""}" data-key="${row.key}" data-i="${n}" data-score="${b.s}"${p.revealed ? " disabled" : ""}>${b.t}<br><strong>${b.s}</strong></button>`;
           }).join("");
-          return `<div class="n2-row"><div class="n2-lab">${row.label}</div><div class="n2-bands">${buttons}</div></div>`;
+          const tight = row.key === "spo2" && news2.scale === 2 ? " n2-spo2-2" : "";
+          return `<div class="n2-row"><div class="n2-lab">${row.label}</div><div class="n2-bands${tight}">${buttons}</div></div>`;
         }).join("");
         const ready = news2Complete();
         optsEl.innerHTML = `

@@ -4,6 +4,7 @@ __pycache__/
 .env.*
 .venv/
 venv/
+ACCOUNTS.md
 host-token.txt
 *.log
 .DS_Store

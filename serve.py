@@ -38,13 +38,17 @@ LOCK = threading.Lock()
 
 POLL = {
     "id": None,
+    "kind": "choice",
     "prompt": "",
     "options": [],
+    "obs": {},
     "correct": None,
+    "expectedTotal": None,
+    "expectedScale": None,
     "teach": "",
     "open": False,
     "revealed": False,
-    "votes": {},  # voter id -> choice index
+    "votes": {},
 }
 
 
@@ -108,13 +112,49 @@ def requested_join(handler: SimpleHTTPRequestHandler) -> str:
 
 
 def public_poll() -> dict:
+    if POLL.get("kind") == "news2":
+        scale1 = scale2 = correct = 0
+        for vote in POLL["votes"].values():
+            if not isinstance(vote, dict):
+                continue
+            if vote.get("scale") == 1:
+                scale1 += 1
+            elif vote.get("scale") == 2:
+                scale2 += 1
+            if (
+                vote.get("scale") == POLL.get("expectedScale")
+                and vote.get("total") == POLL.get("expectedTotal")
+            ):
+                correct += 1
+        out = {
+            "live": True,
+            "kind": "news2",
+            "id": POLL["id"],
+            "prompt": POLL["prompt"],
+            "obs": POLL.get("obs") or {},
+            "options": [],
+            "open": POLL["open"],
+            "revealed": POLL["revealed"],
+            "total": len(POLL["votes"]),
+            "counts": [],
+            "scale1": scale1,
+            "scale2": scale2,
+            "correctScale1": correct,
+            "correct": None,
+            "teach": POLL["teach"] if POLL["revealed"] else "",
+        }
+        if POLL["revealed"]:
+            out["expectedTotal"] = POLL.get("expectedTotal")
+            out["expectedScale"] = POLL.get("expectedScale")
+        return out
     options = POLL["options"]
     counts = [0] * len(options)
     for choice in POLL["votes"].values():
         if isinstance(choice, int) and 0 <= choice < len(counts):
             counts[choice] += 1
-    out = {
+    return {
         "live": True,
+        "kind": "choice",
         "id": POLL["id"],
         "prompt": POLL["prompt"],
         "options": options,
@@ -125,7 +165,6 @@ def public_poll() -> dict:
         "correct": POLL["correct"] if POLL["revealed"] else None,
         "teach": POLL["teach"] if POLL["revealed"] else "",
     }
-    return out
 
 
 def qr_svg(text: str) -> bytes:
@@ -180,9 +219,26 @@ def send_bytes(handler: SimpleHTTPRequestHandler, body: bytes, content_type: str
     handler.wfile.write(body)
 
 
+def same_origin(handler: SimpleHTTPRequestHandler) -> bool:
+    host = (handler.headers.get("Host") or "").split(",")[0].strip().lower()
+    origin = (handler.headers.get("Origin") or "").strip()
+    referer = (handler.headers.get("Referer") or "").strip()
+    for raw in (origin, referer):
+        if not raw:
+            continue
+        netloc = urlparse(raw).netloc.lower()
+        if netloc == host:
+            return True
+    return False
+
+
 def authorised_host(handler: SimpleHTTPRequestHandler) -> bool:
     token = handler.headers.get("X-Host-Token") or ""
-    return token == HOST_TOKEN
+    if token and token == HOST_TOKEN:
+        return True
+    if handler.headers.get("X-Presenter-Role") == "1" and same_origin(handler):
+        return True
+    return is_loopback(handler)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -226,17 +282,46 @@ class Handler(SimpleHTTPRequestHandler):
         data = read_json(self)
         if path == "/api/vote":
             voter = str(data.get("voter") or "").strip()[:80]
-            try:
-                choice = int(data.get("choice"))
-            except (TypeError, ValueError):
-                send_json(self, {"ok": False, "error": "bad vote"}, 400)
-                return
             if not voter:
                 send_json(self, {"ok": False, "error": "missing voter"}, 400)
                 return
             with LOCK:
                 if not POLL["open"] or POLL["revealed"]:
                     send_json(self, {"ok": False, "error": "closed", "poll": public_poll()})
+                    return
+                if POLL.get("kind") == "news2":
+                    try:
+                        scale = int(data.get("scale"))
+                    except (TypeError, ValueError):
+                        send_json(self, {"ok": False, "error": "bad vote"}, 400)
+                        return
+                    if scale not in (1, 2):
+                        send_json(self, {"ok": False, "error": "bad scale"}, 400)
+                        return
+                    scores = data.get("scores") if isinstance(data.get("scores"), dict) else {}
+                    keys = ("rr", "spo2", "o2", "sbp", "pulse", "con", "temp")
+                    parsed = {}
+                    for key in keys:
+                        try:
+                            val = int(scores.get(key))
+                        except (TypeError, ValueError):
+                            send_json(self, {"ok": False, "error": "incomplete"}, 400)
+                            return
+                        if val not in (0, 1, 2, 3):
+                            send_json(self, {"ok": False, "error": "bad score"}, 400)
+                            return
+                        parsed[key] = val
+                    POLL["votes"][voter] = {
+                        "scale": scale,
+                        "total": sum(parsed.values()),
+                        "scores": parsed,
+                    }
+                    send_json(self, {"ok": True, "poll": public_poll()})
+                    return
+                try:
+                    choice = int(data.get("choice"))
+                except (TypeError, ValueError):
+                    send_json(self, {"ok": False, "error": "bad vote"}, 400)
                     return
                 if choice < 0 or choice >= len(POLL["options"]):
                     send_json(self, {"ok": False, "error": "bad choice"}, 400)
@@ -254,14 +339,33 @@ class Handler(SimpleHTTPRequestHandler):
                     options = data.get("options") if isinstance(data.get("options"), list) else []
                     options = [str(x) for x in options][:8]
                     new_id = str(data.get("id") or "")[:40]
-                    if new_id != POLL["id"] or not POLL["open"]:
+                    kind = str(data.get("kind") or "choice")
+                    kind = kind if kind in ("choice", "news2") else "choice"
+                    if new_id != POLL["id"] or not POLL["open"] or POLL.get("kind") != kind:
                         POLL["votes"] = {}
                     POLL["id"] = new_id or "poll"
+                    POLL["kind"] = kind
                     POLL["prompt"] = str(data.get("prompt") or "")[:400]
-                    POLL["options"] = options
+                    POLL["options"] = options if kind == "choice" else []
                     correct = data.get("correct")
                     POLL["correct"] = int(correct) if isinstance(correct, int) else None
                     POLL["teach"] = str(data.get("teach") or "")[:800]
+                    if kind == "news2":
+                        try:
+                            POLL["expectedTotal"] = int(data.get("expectedTotal"))
+                        except (TypeError, ValueError):
+                            POLL["expectedTotal"] = None
+                        try:
+                            expected_scale = int(data.get("expectedScale"))
+                        except (TypeError, ValueError):
+                            expected_scale = 1
+                        POLL["expectedScale"] = expected_scale if expected_scale in (1, 2) else 1
+                        obs = data.get("obs") if isinstance(data.get("obs"), dict) else {}
+                        POLL["obs"] = {str(k)[:24]: str(v)[:160] for k, v in list(obs.items())[:12]}
+                    else:
+                        POLL["expectedTotal"] = None
+                        POLL["expectedScale"] = None
+                        POLL["obs"] = {}
                     POLL["open"] = True
                     POLL["revealed"] = False
                 elif action == "reveal":
@@ -270,9 +374,13 @@ class Handler(SimpleHTTPRequestHandler):
                 elif action == "idle":
                     POLL["open"] = False
                     POLL["id"] = None
+                    POLL["kind"] = "choice"
                     POLL["prompt"] = ""
                     POLL["options"] = []
+                    POLL["obs"] = {}
                     POLL["correct"] = None
+                    POLL["expectedTotal"] = None
+                    POLL["expectedScale"] = None
                     POLL["teach"] = ""
                     POLL["revealed"] = False
                     POLL["votes"] = {}

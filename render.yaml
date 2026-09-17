@@ -2,9 +2,11 @@ services:
   - type: web
     name: copd-cpd
     runtime: python
+    region: frankfurt
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: python serve.py
+    healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.0"

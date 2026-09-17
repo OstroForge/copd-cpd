@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>COPD in Pre-hospital Care | Ambulance CPD</title>
+  <style>
+    :root {
+      --navy: #12382c;
+      --navy-2: #1c5242;
+      --ink: #1c2333;
+      --muted: #5b6b64;
+      --paper: #f3f5f0;
+      --card: #ffffff;
+      --line: #d3d9d0;
+      --amber: #d4a017;
+      --amber-bg: #fff4e0;
+      --teal: #1f7a6c;
+      --teal-bg: #e6f4f1;
+      --red: #b42318;
+      --red-bg: #fdecea;
+      --green: #176b45;
+      --green-bg: #e7f6ee;
+      --stage: #081510;
+      --slide-w: min(100vw, 160vh);
+      --slide-h: calc(var(--slide-w) * 9 / 16);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--stage); color: var(--ink); font-family: "Segoe UI", Calibri, Arial, sans-serif; }
+
+    .stage {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 12px 56px;
+    }
+
+    .deck {
+      position: relative;
+      width: var(--slide-w);
+      height: var(--slide-h);
+      max-height: calc(100vh - 72px);
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .slide {
+      display: flex;
+      flex-direction: column;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      background: var(--paper);
+      color: var(--ink);
+      padding: 36px 48px 44px;
+      overflow: hidden;
+      border: 1px solid #1c3f34;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(36px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      pointer-events: none;
+    }
+    .slide:not(.active) * { visibility: hidden !important; }
+    .slide.back { transform: translateX(-36px); }
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: none;
+      pointer-events: auto;
+      z-index: 2;
+    }
+    .slide.exit {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(-28px);
+      z-index: 1;
+    }
+    .slide.title-slide {
+      background:
+        linear-gradient(90deg, rgba(8, 28, 22, 0.92) 0%, rgba(10, 40, 32, 0.58) 40%, rgba(18, 56, 44, 0.32) 100%),
+        linear-gradient(rgba(18, 56, 44, 0.34), rgba(12, 42, 32, 0.34)),
+        url("assets/title-ambulance.png") right center / cover no-repeat;
+      color: #f7f4ee;
+      justify-content: flex-end;
+      padding: 48px 56px 56px;
+    }
+    .slide.title-slide h1 { color: #fff; }
+    .slide.title-slide .subtitle { color: #e4f0ea; }
+    .slide.title-slide .meta { color: #c5dcd0; }
+    .slide.title-slide h1,
+    .slide.title-slide .subtitle,
+    .slide.title-slide .meta {
+      text-shadow: 0 1px 2px #081510;
+    }
+    .slide.title-slide::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 14px;
+      background: var(--amber);
+    }
+
+    .kicker {
+      font-size: 15px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--amber);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .title-slide .kicker { color: #f0c36a; }
+    h1 {
+      font-size: clamp(32px, 4.4vw, 58px);
+      line-height: 1.08;
+      font-weight: 750;
+      letter-spacing: -0.03em;
+      max-width: 16ch;
+    }
+    h2 {
+      font-size: clamp(26px, 2.7vw, 40px);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      color: var(--navy);
+      margin-bottom: 18px;
+    }
+    .subtitle { margin-top: 18px; font-size: 22px; color: #d7e8df; max-width: 42ch; }
+    .meta { margin-top: 28px; color: #a8c4b6; font-size: 15px; }
+
+    .body {
+      flex: 1;
+      display: grid;
+      gap: 16px;
+      font-size: 21px;
+      line-height: 1.35;
+      align-content: start;
+      align-items: start;
+    }
+    .body.two { grid-template-columns: 1fr 1fr; }
+    .body.three { grid-template-columns: 1fr 1fr 1fr; }
+    .body.quiz { grid-template-columns: 1fr 1fr; gap: 10px; }
+    ul { padding-left: 1.1em; }
+    li { margin: 0.38em 0; }
+    .small { font-size: 16px; color: var(--muted); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 16px 18px;
+      width: 100%;
+    }
+    .card h3 { font-size: 18px; color: var(--navy); margin-bottom: 8px; }
+    .card p, .card li { font-size: 17px; }
+    .myth { background: var(--red-bg); border-color: #f0b8b2; }
+    .fact { background: var(--green-bg); border-color: #b7e0c8; }
+    .warn { background: var(--amber-bg); border-color: #efd3a0; }
+    .ok { background: var(--teal-bg); border-color: #b7ddd6; }
+    .myth h3 { color: var(--red); }
+    .fact h3 { color: var(--green); }
+    .warn h3 { color: #8a5608; }
+    .ok h3 { color: var(--teal); }
+
+    .banner {
+      background: var(--amber);
+      color: #1a1206;
+      font-weight: 750;
+      font-size: clamp(22px, 2.4vw, 32px);
+      padding: 16px 20px;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .banner.dark {
+      background: var(--navy);
+      color: #fff;
+    }
+    .banner.red { background: var(--red); color: #fff; }
+    .banner.teal { background: var(--teal); color: #fff; }
+
+    .callout {
+      border-left: 8px solid var(--amber);
+      background: var(--amber-bg);
+      padding: 16px 18px;
+      font-size: 22px;
+      font-weight: 650;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      font-size: 16px;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: var(--navy); color: #fff; font-weight: 650; }
+    td.score { text-align: center; font-weight: 750; font-size: 24px; }
+    .bad { background: var(--red-bg); color: var(--red); }
+    .good { background: var(--green-bg); color: var(--green); }
+    .mid { background: var(--amber-bg); color: #8a5608; }
+
+    .footer-bar {
+      position: absolute;
+      left: 48px; right: 48px; bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .title-slide .footer-bar { color: #8fb3a6; left: 56px; right: 56px; }
+
+    .controls {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 48px;
+      background: #0a1914;
+      color: #c5dcd0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      font-size: 13px;
+      z-index: 20;
+    }
+    .controls button, .notes-toggle {
+      background: #1c4236;
+      color: #e8f5ee;
+      border: 0;
+      padding: 7px 12px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .controls button:hover { background: #2a5c4a; }
+    .progress {
+      flex: 1;
+      height: 6px;
+      background: #1c4236;
+    }
+    .progress span {
+      display: block;
+      height: 100%;
+      background: var(--amber);
+      width: 0%;
+    }
+
+    .notes {
+      display: none;
+      position: fixed;
+      right: 12px;
+      bottom: 60px;
+      width: min(420px, 36vw);
+      max-height: 42vh;
+      overflow: auto;
+      background: #102018;
+      color: #e7f4ee;
+      padding: 14px 16px;
+      font-size: 14px;
+      line-height: 1.45;
+      z-index: 15;
+      border-top: 4px solid var(--amber);
+    }
+    .notes.visible { display: block; }
+    .notes strong { color: #f0c36a; }
+
+    .reveal { opacity: 0; transform: translateY(8px); transition: 0.25s ease; }
+    .slide.active .reveal { opacity: 1; transform: none; }
+    .q { cursor: pointer; }
+    .q::after {
+      content: "Click to reveal";
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .q.open::after { display: none; }
+    .answer { display: none; margin-top: 10px; }
+    .q.open .answer { display: block; }
+
+    .photo-frame {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: #0a1914;
+      min-height: 0;
+    }
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #0a1914;
+    }
+    .photo-caption {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .diagram-row {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(4, 1fr);
+      margin-top: 8px;
+    }
+    .diagram-row.three { grid-template-columns: 1fr 1.1fr 1fr; }
+    .step {
+      padding: 12px 14px;
+      color: #fff;
+      min-height: 0;
+    }
+    .step h3 { color: #f0c36a; font-size: 15px; margin-bottom: 6px; }
+    .step p, .step li { font-size: 14px; line-height: 1.35; }
+    .step.red { background: var(--red); }
+    .step.green { background: var(--navy-2); }
+    .step.gold { background: var(--amber); color: #1a1206; }
+    .step.gold h3 { color: #1a1206; }
+    .step.dark { background: var(--navy); }
+    .bars { display: flex; width: 100%; height: 52px; margin: 6px 0 4px; font-size: 12px; font-weight: 700; }
+    .bars span {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      line-height: 1.15;
+      text-align: center;
+      padding: 0 4px;
+    }
+    .bars .r { background: var(--red); }
+    .bars .a { background: var(--amber); color: #1a1206; }
+    .bars .y { background: #e2c36a; color: #1a1206; }
+    .bars .g { background: var(--green); }
+    .bars .mark { outline: 3px solid #f0c36a; outline-offset: -3px; }
+    .build:not(.show) { display: none; }
+    .build.show {
+      display: block;
+      animation: rise 0.45s ease both;
+    }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: none; }
+    }
+    .slide.active .card:not(.build),
+    .slide.active .banner:not(.build),
+    .slide.active .callout:not(.build),
+    .slide.active table,
+    .slide.active .diagram,
+    .slide.active .photo-frame {
+      animation: rise 0.48s ease both;
+    }
+    .slide.active .body.two > :nth-child(2),
+    .slide.active .body.three > :nth-child(2) { animation-delay: 0.12s; }
+    .slide.active .body.three > :nth-child(3) { animation-delay: 0.22s; }
+    .slide.active .banner:not(.build):nth-of-type(2) { animation-delay: 0.1s; }
+    .slide.active .banner:not(.build):nth-of-type(3) { animation-delay: 0.18s; }
+    .slide.active .banner:not(.build):nth-of-type(4) { animation-delay: 0.26s; }
+    .slide.active .banner:not(.build):nth-of-type(5) { animation-delay: 0.34s; }
+    .slide.title-slide.active h1 { animation: rise 0.7s ease both; }
+    .slide.title-slide.active .subtitle { animation: rise 0.7s ease 0.14s both; }
+    .slide.title-slide.active .meta { animation: rise 0.7s ease 0.26s both; }
+    @media (prefers-reduced-motion: reduce) {
+      .slide, .build { transition: none; }
+      .slide.active .card,
+      .slide.active .banner,
+      .slide.active .callout,
+      .slide.active table,
+      .slide.active .diagram,
+      .slide.active .photo-frame,
+      .slide.title-slide.active h1,
+      .slide.title-slide.active .subtitle,
+      .slide.title-slide.active .meta { animation: none; }
+    }
+
+    html:fullscreen .controls {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    html:fullscreen .controls:hover,
+    html:fullscreen .controls:focus-within {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    body.audience .notes,
+    body.audience #notesBtn { display: none !important; }
+    body.audience .stage { padding-bottom: 12px; }
+
+    .pv-side { display: contents; }
+    .pv-side > :not(.notes) { display: none; }
+    body.presenter {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.9fr);
+      grid-template-rows: 1fr 48px;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body.presenter .stage {
+      grid-column: 1;
+      grid-row: 1;
+      min-height: 0;
+      padding: 10px;
+    }
+    body.presenter .pv-side {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      grid-column: 2;
+      grid-row: 1;
+      min-height: 0;
+      padding: 12px 14px 10px 0;
+    }
+    body.presenter .pv-side > :not(.notes) { display: block; }
+    body.presenter .controls {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      position: static;
+    }
+    body.presenter .deck {
+      width: 100%;
+      height: 100%;
+      max-height: none;
+    }
+    body.presenter .slide {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: auto;
+      max-height: none;
+    }
+    body.presenter .notes {
+      display: block;
+      position: static;
+      width: auto;
+      max-height: none;
+      flex: 1;
+      min-height: 0;
+    }
+    body.presenter #notesBtn { display: none; }
+    .pv-kicker {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f0c36a;
+      font-weight: 700;
+    }
+    .pv-next-title {
+      color: #e8f5ee;
+      font-size: 16px;
+      font-weight: 650;
+      line-height: 1.3;
+    }
+    .pv-timer {
+      background: #1c4236;
+      color: #f0c36a;
+      border: 0;
+      font: inherit;
+      font-size: 28px;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+      padding: 8px 12px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .pv-hint {
+      color: #a8c4b6;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .pv-join-box {
+      background: #102018;
+      padding: 10px 12px;
+      border-top: 3px solid var(--amber);
+    }
+    .pv-join-url {
+      color: #e8f5ee;
+      font-size: 13px;
+      word-break: break-all;
+      margin: 6px 0 8px;
+      line-height: 1.3;
+    }
+    .pv-join-box input {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px 8px;
+      border: 1px solid #2a5c4a;
+      background: #0a1914;
+      color: #e8f5ee;
+      font: inherit;
+      font-size: 12px;
+    }
+    .pv-join-box button {
+      width: 100%;
+      margin-top: 6px;
+    }
+    body.audience #copyJoinBtn,
+    body.vote #copyJoinBtn { display: none; }
+    body:not(.live) #copyJoinBtn { display: none; }
+    body.presenter #copyJoinBtn { display: none; }
+
+    .poll-slide .body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      align-items: stretch;
+    }
+    .poll-top {
+      display: grid;
+      grid-template-columns: minmax(0, auto) 148px;
+      gap: 16px;
+      align-items: start;
+      width: max-content;
+      max-width: 100%;
+    }
+    .poll-prompt {
+      font-size: clamp(22px, 2.6vw, 34px);
+      font-weight: 750;
+      line-height: 1.2;
+      color: var(--navy);
+      max-width: 28ch;
+    }
+    .poll-join {
+      display: none;
+      width: 148px;
+      text-align: center;
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 8px 8px 10px;
+    }
+    body.live .poll-join { display: block; }
+    .poll-join img {
+      width: 132px;
+      height: 132px;
+      display: block;
+    }
+    .poll-url {
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-all;
+      margin-top: 6px;
+      line-height: 1.3;
+    }
+    .poll-phones {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--teal);
+      margin-top: 4px;
+    }
+    .poll-opts { display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 0; width: 100%; }
+    .poll-opt {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: auto auto;
+      gap: 4px 12px;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 12px 14px;
+      position: relative;
+      width: 100%;
+    }
+    .poll-lab { font-size: 20px; font-weight: 650; color: var(--navy); z-index: 1; }
+    .poll-n { font-size: 20px; font-weight: 750; color: var(--navy); z-index: 1; }
+    .poll-bar {
+      grid-column: 1 / -1;
+      height: 8px;
+      background: #e4ebe6;
+    }
+    .poll-bar i {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: var(--navy-2);
+      transition: width 0.35s ease;
+    }
+    .poll-slide.revealed .poll-opt.is-correct {
+      background: var(--green-bg);
+      border-color: #b7e0c8;
+    }
+    .poll-slide.revealed .poll-opt.is-correct .poll-bar i { background: var(--green); }
+    .poll-teach {
+      display: none;
+      background: var(--green-bg);
+      border: 1px solid #b7e0c8;
+      padding: 12px 14px;
+      font-size: 17px;
+    }
+    .poll-slide.revealed .poll-teach { display: block; }
+    .poll-host { display: none; font-size: 13px; color: var(--muted); }
+    body.live:not(.audience) .poll-host,
+    body.fallback:not(.audience) .poll-host { display: block; }
+    body.fallback .poll-opt { cursor: pointer; }
+    body.fallback .poll-bar,
+    body.fallback .poll-n,
+    body.fallback .poll-join { display: none; }
+
+    .poll-case h2 { font-size: clamp(22px, 2.3vw, 32px); margin-bottom: 8px; }
+    .poll-case .poll-prompt {
+      font-size: clamp(18px, 2vw, 24px);
+      max-width: none;
+    }
+    .poll-case .body { gap: 8px; }
+    .poll-detail {
+      display: grid;
+      grid-template-columns: 0.95fr 1.15fr;
+      gap: 12px;
+      align-items: start;
+      min-width: 0;
+    }
+    .poll-facts {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+    .poll-facts h3 { font-size: 15px; color: var(--navy); margin-bottom: 4px; }
+    .poll-facts li { font-size: 15px; margin: 0.18em 0; }
+    .poll-case .bars { height: 40px; font-size: 11px; margin: 4px 0; }
+    .poll-case .poll-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 0; }
+    .poll-case .poll-opt { padding: 10px 12px; }
+    .poll-case .poll-lab { font-size: 17px; }
+
+    body.vote {
+      background: var(--stage);
+      color: #f7f4ee;
+    }
+    body.vote .stage,
+    body.vote .controls,
+    body.vote .pv-side { display: none !important; }
+    #voteApp {
+      display: none;
+      min-height: 100%;
+      padding: 28px 20px 40px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+    #voteApp[hidden] { display: none !important; }
+    body.vote #voteApp { display: block; }
+    #voteApp .vote-kicker {
+      font-size: 14px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #f0c36a;
+      font-weight: 700;
+    }
+    #votePrompt {
+      font-size: 26px;
+      font-weight: 750;
+      line-height: 1.2;
+      margin: 16px 0 18px;
+      color: #fff;
+    }
+    #voteStatus { color: #a8c4b6; font-size: 16px; margin-bottom: 14px; }
+    .vote-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: #1c5242;
+      color: #fff;
+      border: 0;
+      padding: 18px 16px;
+      font: inherit;
+      font-size: 20px;
+      font-weight: 650;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+    .vote-btn:disabled { cursor: default; }
+    .vote-btn.picked { outline: 3px solid #f0c36a; outline-offset: -3px; }
+    .vote-btn.right { background: #176b45; }
+    .vote-btn.wrong { background: #7a2a24; }
+    #voteTeach {
+      display: none;
+      margin-top: 16px;
+      background: #12382c;
+      padding: 14px;
+      font-size: 16px;
+      line-height: 1.4;
+    }
+    #voteTeach.show { display: block; }
+
+    @media print {
+      body { background: #fff; }
+      .stage { padding: 0; display: block; }
+      .deck { height: auto; max-height: none; }
+      .controls, .notes, .pv-side { display: none !important; }
+      .slide {
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        display: flex !important;
+        width: 100%;
+        height: auto;
+        min-height: 100vh;
+        page-break-after: always;
+        border: 0;
+        max-height: none;
+      }
+      .build { display: block !important; opacity: 1 !important; transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage" id="stage"></div>
+  <div class="pv-side" id="pvSide">
+    <div class="pv-kicker">Next slide</div>
+    <p class="pv-next-title" id="nextTitle"></p>
+    <aside class="notes" id="notes"></aside>
+    <div class="pv-join-box">
+      <div class="pv-kicker">Room + Teams join</div>
+      <p class="pv-join-url" id="joinDisplay">Start python serve.py for a live vote link.</p>
+      <button type="button" id="copyJoin">Copy join link</button>
+      <input id="joinOverride" type="url" placeholder="Optional public URL for Teams voting" />
+    </div>
+    <button type="button" class="pv-timer" id="timer" title="Click to reset timer">00:00</button>
+    <p class="pv-hint" id="pvHint">Share the Audience window with the projector and in Teams. Keep this window on your laptop.</p>
+  </div>
+  <div class="controls">
+    <button type="button" id="prev">Back</button>
+    <button type="button" id="next">Next</button>
+    <div class="progress"><span id="bar"></span></div>
+    <span id="count"></span>
+    <button type="button" id="notesBtn">Notes (N)</button>
+    <button type="button" id="pvBtn">Presenter view (S)</button>
+    <button type="button" id="copyJoinBtn">Copy join link</button>
+    <button type="button" id="fsBtn">Fullscreen (F)</button>
+  </div>
+  <div id="voteApp" hidden>
+    <p class="vote-kicker">COPD CPD</p>
+    <p id="voteStatus">Connecting to the room…</p>
+    <p id="votePrompt"></p>
+    <div id="voteOpts"></div>
+    <p id="voteTeach"></p>
+  </div>
+
+  <script>
+    const slides = [
+      {
+        type: "title",
+        kicker: "Ambulance CPD  ·  25 minutes",
+        title: "COPD, Type 2 Respiratory Failure and NEWS2",
+        subtitle: "Pre-hospital assessment and treatment of acute exacerbations, with a hard look at NEWS2 Scale 2.",
+        meta: "JRCALC G0390 v20.40 (updated 6 September 2023), JRCALC oxygen and medicines, and RCP NEWS2. Always follow the live JRCALC entry and local Trust policy.",
+        notes: "Open with the title statement. Do not bury the learning point. Next slide is the live hands-up. Leave it up while phones scan the QR."
+      },
+      {
+        type: "poll",
+        pollId: "hands",
+        kicker: "Hands up",
+        title: "Before we start — phones out",
+        prompt: "Do you currently put every COPD patient on NEWS2 Scale 2?",
+        options: [
+          "Yes — that is my default",
+          "Only if they look like type 2 failure",
+          "No — Scale 1 unless type 2 is already documented"
+        ],
+        correct: null,
+        teach: "If you said yes, you are not alone. COPD does not choose Scale 2. A previous hospital or specialist record of type 2 failure does. That is the gap this session closes.",
+        notes: "Leave this slide up while people scan the QR. On Teams, copy the join link into chat so remote staff vote on their phone while watching the Audience window. Space locks the vote and shows the teaching line."
+      },
+      {
+        kicker: "Purpose",
+        title: "What this session will change in practice",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>By the end you will</h3>
+              <ul>
+                <li>Recognise and treat an acute exacerbation of COPD using JRCALC principles</li>
+                <li>Give controlled oxygen without withholding it from the critically ill</li>
+                <li>Use NEWS2 Scale 1 unless type 2 failure is already documented by a hospital or specialist team</li>
+                <li>Hand over a score that receiving staff can trust</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>The point that is usually missed</h3>
+              <p>A diagnosis of COPD does not confirm hypercapnic (type 2) respiratory failure. Most acutely ill COPD patients do not have it. NEWS2 Scale 2 is not the default COPD scale.</p>
+            </div>
+          </div>`,
+        notes: "Learning outcomes on the left; the session’s unique emphasis on the right. Keep this to one minute."
+      },
+      {
+        kicker: "Key teaching point",
+        title: "Remember this slide if you remember nothing else",
+        html: `
+          <div class="banner build">COPD ≠ type 2 respiratory failure</div>
+          <div class="banner teal build" style="margin-top:10px">COPD ≠ automatic NEWS2 Scale 2</div>
+          <div class="body two" style="margin-top:16px">
+            <div class="card">
+              <h3>Oxygen target</h3>
+              <p>In known or suspected COPD, start with a target of <strong>88–92%</strong> (or the alert-card range) unless the patient is critically ill.</p>
+              <p class="small" style="margin-top:10px">This is a treatment decision from JRCALC / BTS.</p>
+            </div>
+            <div class="card">
+              <h3>NEWS2 scale</h3>
+              <p>Use <strong>Scale 1</strong> unless type 2 respiratory failure has already been confirmed on blood gas <em>and</em> documented by a hospital doctor, ANP or specialist. Ambulance clinicians on scene do not make that decision.</p>
+              <p class="small" style="margin-top:10px">This is a scoring decision from RCP NEWS2 — not a JRCALC on-scene choice.</p>
+            </div>
+          </div>
+          <p class="callout build" style="margin-top:16px">These are two separate decisions. They do not automatically travel together.</p>`,
+        notes: "RCP March 2020 additional guidance is explicit: agreeing a target saturation is a separate clinical decision from choosing which NEWS2 scale to use. Space reveals the two banners, then the callout. This is the whole session in one slide."
+      },
+      {
+        kicker: "JRCALC G0390 — the actual wording",
+        title: "G0390 does not treat every COPD patient as type 2",
+        html: `
+          <div class="banner dark">“Some patients with COPD are at increased risk of hypercapnic respiratory failure (Type 2)”</div>
+          <div class="body two" style="margin-top:16px">
+            <div class="card fact">
+              <h3>What that sentence does</h3>
+              <ul>
+                <li>The word is <strong>some</strong>, not all</li>
+                <li>COPD raises the risk of type 2 failure. It does not diagnose it</li>
+                <li>Those with a <strong>history</strong> of type 2 failure should know their baseline saturations and carry an alert card</li>
+                <li>That group may need a tailored oxygen approach</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>What G0390 says about NEWS2</h3>
+              <p>After the usual observations, G0390 tells you to calculate a NEWS2 score and points you to the sepsis guideline.</p>
+              <p style="margin-top:10px">It does <strong>not</strong> say “COPD = Scale 2”, and it does not authorise an on-scene Scale 2 decision. If JRCALC wanted crews to choose Scale 2, this is where it would say so. It does not.</p>
+            </div>
+          </div>`,
+        notes: "Read the quote slowly. This is the user’s requested highlight, now in JRCALC’s own words. Then: G0390’s NEWS2 instruction is ‘calculate a NEWS2 score (refer to Sepsis)’ — no scale switch. RCP still governs how Scale 2 is used."
+      },
+      {
+        kicker: "Background",
+        title: "COPD in one minute",
+        html: `
+          <div class="body two">
+            <div>
+              <ul>
+                <li>Chronic progressive airflow obstruction</li>
+                <li>Usually diagnosed over 35 in current or ex-smokers</li>
+                <li>Treat as COPD if over 50, long-term smoker, exertional breathlessness, and no other known cause</li>
+                <li>Baseline SpO<sub>2</sub> is often lower than in healthy adults — ask what “normal for them” is</li>
+                <li>An exacerbation is a worsening of a previously stable condition; 30% have no identified cause</li>
+              </ul>
+            </div>
+            <div>
+              <div class="photo-frame" style="height:250px">
+                <img src="assets/oxygen-kit.png" alt="UK CD oxygen cylinder, 28 percent Venturi mask and nebuliser">
+              </div>
+              <p class="photo-caption">UK CD cylinder and 28% Venturi — titrated oxygen, not a reason to choose Scale 2.</p>
+              <div class="card warn" style="margin-top:10px">
+                <h3>Pre-hospital trap</h3>
+                <p>COPD is a risk factor for hypercapnia. It is not proof of hypercapnia. Only a blood gas (now or previously documented) confirms type 2 respiratory failure.</p>
+              </div>
+            </div>
+          </div>`,
+        notes: "Do not lecture pathophysiology. The trap box is the only part that must land."
+      },
+      {
+        kicker: "JRCALC G0390",
+        title: "Is this an exacerbation — or something else?",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>Supports an exacerbation</h3>
+              <ul>
+                <li>Increased dyspnoea, especially on exertion</li>
+                <li>Increased sputum volume or purulence</li>
+                <li>Increased cough, wheeze, chest tightness</li>
+                <li>Reduced exercise tolerance, fatigue, fluid retention</li>
+                <li>Acute confusion or a worsening of a previously stable condition</li>
+              </ul>
+            </div>
+            <div class="card myth">
+              <h3>Uncommon in simple COPD — look again</h3>
+              <ul>
+                <li>Asthma, pneumonia, pneumothorax</li>
+                <li>LVF / pulmonary oedema</li>
+                <li>Pulmonary embolus, lung cancer</li>
+                <li>Upper airway obstruction, pleural effusion, recurrent aspiration</li>
+              </ul>
+            </div>
+          </div>
+          <p class="small" style="margin-top:12px">G0390: chest pain and fever are uncommon symptoms of COPD — consider other causes. Severe features include marked dyspnoea, tachypnoea, pursed-lips breathing, accessory muscles at rest, new cyanosis, new oedema, and a marked drop in daily activity.</p>`,
+        notes: "JRCALC specifically flags chest pain and fever as uncommon. Use this to stop automatic labelling of every breathless smoker as ‘just COPD’."
+      },
+      {
+        kicker: "Assessment",
+        title: "What to ask and what to measure",
+        html: `
+          <div class="body three">
+            <div class="card">
+              <h3>Ask</h3>
+              <ul>
+                <li>Baseline saturations when well, and previous problems with oxygen</li>
+                <li>Alert card, individualised plan, or Hub special message</li>
+                <li>Home oxygen, previous NIV / ITU</li>
+                <li>Have they already taken steroids or antibiotics?</li>
+                <li>Encourage their usual breathing-control techniques if they help</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Examine</h3>
+              <ul>
+                <li>&lt;C&gt;ABCDE, including work of breathing</li>
+                <li>SpO<sub>2</sub>, RR, pulse, BP, temperature</li>
+                <li>Blood glucose if appropriate</li>
+                <li>12-lead ECG if indicated (G0390 update 2023)</li>
+                <li>NEWS2 Scale 1 unless a hospital or specialist record of type 2 failure is already in front of you</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Red flags</h3>
+              <ul>
+                <li>Exhaustion or tiring</li>
+                <li>Silent chest</li>
+                <li>SpO<sub>2</sub> &lt;88% unresponsive to oxygen</li>
+                <li>Drowsiness or new confusion</li>
+                <li>Major ABCD failure</li>
+              </ul>
+            </div>
+          </div>`,
+        notes: "The patient and carers often know their baseline better than we do. An oxygen alert card is gold, but its absence does not prove they are not a retainer — and its presence still does not automatically select NEWS2 Scale 2 unless HCRF is documented."
+      },
+      {
+        kicker: "Time critical",
+        title: "When COPD becomes a time-critical transfer",
+        html: `
+          <div class="body">
+            <div class="banner red">Do not withhold high-concentration oxygen from the critically ill COPD patient</div>
+            <div class="body two" style="margin-top:16px">
+              <div class="card">
+                <h3>Time-critical features</h3>
+                <ul>
+                <li>Major &lt;C&gt;ABCDE problems</li>
+                <li>Extreme breathing difficulty against their usual condition</li>
+                <li>Cyanosis — though peripheral cyanosis may be “normal” for some</li>
+                <li>Exhaustion</li>
+                <li>SpO<sub>2</sub> &lt;88% unresponsive to oxygen</li>
+                </ul>
+              </div>
+              <div class="card">
+                <h3>Then</h3>
+                <ul>
+                <li>Start correcting &lt;C&gt;ABCDE</li>
+                <li>Do not withhold high-concentration oxygen if the primary illness needs it</li>
+                <li>TIME-CRITICAL transfer and an ATMIST call</li>
+                <li>Continue treatment en-route</li>
+                </ul>
+              </div>
+            </div>
+            <p class="small">G0390: in the short time a patient is in ambulance care, hypoxia presents a much greater risk than hypercapnia in most cases. Pulse oximetry does not show CO<sub>2</sub> — that needs capnography or a hospital blood gas.</p>
+          </div>`,
+        notes: "Kill the old fear that ‘oxygen will stop them breathing’ as a reason to leave someone hypoxic. Titrate once they are no longer critically ill. Capnography if available; oximetry never measures CO2."
+      },
+      {
+        kicker: "The job in one picture",
+        title: "G0390 as an on-scene map",
+        html: `
+          <div class="banner gold" style="background:var(--navy);color:#f7f4ee;margin-bottom:12px">Breathless patient — known or suspected COPD. &lt;C&gt;ABCDE · usual sats · alert card · work of breathing</div>
+          <p style="text-align:center;font-weight:750;margin-bottom:10px;color:var(--navy)">Critically ill or tiring?</p>
+          <div class="diagram-row three">
+            <div class="step red">
+              <h3>YES — time-critical</h3>
+              <p>Do not withhold high-flow O<sub>2</sub>. Correct &lt;C&gt;ABCDE. ATMIST. Titrate once no longer critical. NEWS2 Scale 1 unless type 2 is already documented.</p>
+            </div>
+            <div class="step green">
+              <h3>NO — controlled oxygen</h3>
+              <p>Target 88–92% (or alert card). Start 4 L 28% Venturi. Salbutamol 5 mg, 6-minute O<sub>2</sub> drive. Ipratropium once if severe. Oxygen target is not the NEWS2 scale.</p>
+            </div>
+            <div class="step dark">
+              <h3>NEWS2</h3>
+              <p>Default Scale 1. Scale 2 only if type 2 failure is already documented. You apply that record — you do not decide it. Handover the scale you used.</p>
+            </div>
+          </div>
+          <p class="small" style="margin-top:8px">Original teaching map for this session — not a screenshot of JRCALC. Follow the live G0390 page.</p>`,
+        notes: "Walk left to right. The split is critically ill or not. Then say the green line out loud: oxygen target is not the NEWS2 scale."
+      },
+      {
+        kicker: "Physiology that changes the score",
+        title: "Two types of respiratory failure",
+        html: `
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Type 1</th>
+                <th>Type 2 (hypercapnic)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Blood gas</strong></td>
+                <td>Low PaO<sub>2</sub> (&lt;8 kPa). PaCO<sub>2</sub> normal or low.</td>
+                <td>Low PaO<sub>2</sub> and high PaCO<sub>2</sub> (&gt;6 kPa).</td>
+              </tr>
+              <tr>
+                <td><strong>What it means</strong></td>
+                <td>The lungs are not oxygenating. Ventilation of CO<sub>2</sub> is still working.</td>
+                <td>The patient is failing to ventilate. High-flow oxygen can worsen CO<sub>2</sub> retention.</td>
+              </tr>
+              <tr>
+                <td><strong>In COPD</strong></td>
+                <td>Common. COPD does not protect anyone from type 1 failure.</td>
+                <td>Important, but not automatic. Needs blood gas confirmation, now or previously documented.</td>
+              </tr>
+              <tr>
+                <td><strong>NEWS2</strong></td>
+                <td>Scale 1</td>
+                <td>Scale 1 on scene. Scale 2 only if a hospital/specialist team has already documented type 2 failure</td>
+              </tr>
+            </tbody>
+          </table>`,
+        notes: "Walk through the table slowly. Ask: ‘If you have no blood gas and no documented HCRF, which type do you know this patient has?’ Answer: neither. You know they are at risk. That is why you titrate oxygen. It is not why you switch NEWS2 scale."
+      },
+      {
+        kicker: "Evidence",
+        title: "Most COPD patients do not present with hypercapnia",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>What the evidence says</h3>
+              <ul>
+                <li>Around 1 in 5 hospitalised AECOPD patients has respiratory acidosis — so most do not</li>
+                <li>RCP NEWS2 authors: Scale 2 was designed only for documented hypercapnic respiratory failure, “explicitly noting that most acutely ill patients with AECOPD will not present with HCRF”</li>
+                <li>RCP 2020: putting COPD patients without hypercapnia on Scale 2 “is not in line with NEWS2 guidance”</li>
+              </ul>
+            </div>
+            <div class="card fact">
+              <h3>So what?</h3>
+              <p>If you default every COPD job to Scale 2, you will under-score hypoxia in the majority. A patient with SpO<sub>2</sub> 90% can look “stable” on Scale 2 and “red” on Scale 1.</p>
+            </div>
+          </div>`,
+        notes: "Plant et al Thorax 2000: about 20% of AECOPD admissions had respiratory acidosis. Williams et al Clin Med 2019 is the RCP chair stating most AECOPD do not have HCRF. RCP additional guidance March 2020 admits this misuse is common."
+      },
+      {
+        kicker: "NEWS2",
+        title: "When Scale 2 can be applied — not decided on scene",
+        html: `
+          <div class="body two">
+            <div class="card fact">
+              <h3>When Scale 2 may be applied</h3>
+              <ul>
+                <li>Hypercapnic (type 2) failure already confirmed on blood gas — previous admission or this hospital stay</li>
+                <li>A hospital doctor, ANP or specialist has already recorded that decision</li>
+                <li>You can see that documentation: alert card stating type 2 / raised CO<sub>2</sub>, specialist care plan, previous ABG, or Hub special message</li>
+              </ul>
+              <p style="margin-top:10px"><strong>You are applying their decision. You are not authorising Scale 2 from scene findings.</strong></p>
+            </div>
+            <div class="card myth">
+              <h3>Ambulance clinicians on scene do not choose Scale 2</h3>
+              <ul>
+                <li>Not because the patient “has COPD”</li>
+                <li>Not because they are on home oxygen</li>
+                <li>Not because they “look like a retainer”</li>
+                <li>Not because you are targeting 88–92%</li>
+                <li>Not because the ePR offered Scale 2 when you typed COPD</li>
+              </ul>
+            </div>
+          </div>
+          <p class="small" style="margin-top:12px">If the paperwork is not there, use Scale 1 and say so at handover. Receiving staff can switch after a blood gas.</p>`,
+        notes: "Be blunt. RCP’s ‘competent clinical decision-maker’ is the clinician who can determine history or presence of hypercapnia — in practice a hospital doctor, ANP or specialist after a blood gas. An ambulance clinician cannot make a new Scale 2 decision on scene. An alert card that only says ‘COPD, target 88–92’ is an oxygen target, not a Scale 2 authorisation, unless it states type 2 / raised CO2 / previous hypercapnia."
+      },
+      {
+        kicker: "Worked example",
+        title: "Same patient, two scales, two very different risks",
+        html: `
+          <div class="body two" style="margin-bottom:10px;align-items:stretch">
+            <div>
+              <p style="margin-bottom:10px;font-size:18px">68-year-old with known COPD. No alert card. No documented blood gas. SpO<sub>2</sub> <strong>90% on air</strong>. Other observations otherwise unremarkable.</p>
+              <div class="photo-frame" style="height:168px">
+                <img src="assets/spo2-90.png" alt="Pulse oximeter reading 90 percent">
+              </div>
+              <p class="photo-caption">90% on air is hypoxia on Scale 1. It is a 0 on Scale 2.</p>
+            </div>
+            <div>
+              <h3 style="font-size:16px;color:var(--navy);margin-bottom:4px">Scale 1 — default</h3>
+              <div class="bars">
+                <span class="r mark" style="flex:2.2">91% or below<br>score 3</span>
+                <span class="a" style="flex:1.4">92–93%<br>2</span>
+                <span class="y" style="flex:1.4">94–95%<br>1</span>
+                <span class="g" style="flex:2.2">96%+<br>0</span>
+              </div>
+              <p class="small">90% sits in the red. Teaching bars, not the official RCP chart.</p>
+              <h3 style="font-size:16px;color:var(--navy);margin:12px 0 4px">Scale 2 — only if type 2 is already documented</h3>
+              <div class="bars">
+                <span class="r" style="flex:1.2">≤83%<br>3</span>
+                <span class="a" style="flex:0.9">84–85<br>2</span>
+                <span class="y" style="flex:0.9">86–87<br>1</span>
+                <span class="g mark" style="flex:2">88–92%<br>0</span>
+                <span class="y" style="flex:0.8">93–94<br>1</span>
+                <span class="a" style="flex:0.8">95–96<br>2</span>
+                <span class="r" style="flex:0.8">97%+<br>3</span>
+              </div>
+              <p class="small">90% sits in the green. Use the live NEWS2 tool or ePR.</p>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>Scale</th><th>SpO<sub>2</sub> 90% on air</th><th>What the score tells the next clinician</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Scale 1 — correct default</strong></td>
+                <td class="score bad">3</td>
+                <td>Single red parameter. This person is hypoxic on the standard scale and needs a proper look.</td>
+              </tr>
+              <tr>
+                <td><strong>Scale 2 — incorrect habit</strong></td>
+                <td class="score good">0</td>
+                <td>Looks “fine”. Hypoxia has been normalised away. Deterioration is easier to miss.</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="callout build" style="margin-top:12px">Wrong scale does not just tidy the paperwork. It can hide a patient who needs oxygen, a senior review, or a higher-priority handover.</p>`,
+        notes: "This is the killer slide. Point at the colour bars: 90% is a 3 on Scale 1 and a 0 on Scale 2. Then space for the callout. They may still target 88–92% oxygen while scoring on Scale 1."
+      },
+      {
+        kicker: "Why Scale 1 is still right",
+        title: "A usual SpO₂ of 90% scoring 3 is not a reason to switch scale",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>That 3 is doing its job</h3>
+              <ul>
+                <li>Scale 1 was built on a normal SpO<sub>2</sub> of 96%+. 90% is hypoxia on that scale, even if it is “normal for them”</li>
+                <li>RCP designed that score to prompt a look. It does not, by itself, mean you must change scale or turn the oxygen up</li>
+                <li>WMAS <strong>CN-436</strong> (pre-alert, V8 July 2026) is adapted from NEWS. The sats line is <strong>not</strong> “any single 3”</li>
+                <li>CN-436: pre-alert if sats <strong>on oxygen ≤91%</strong>, or <strong>≤83% in chronic hypercapnic respiratory failure</strong></li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>So 90% on air is not an automatic alert — and Scale 2 is still the wrong fix</h3>
+              <ul>
+                <li>90% <strong>on air</strong> scores 3 on Scale 1. It does <strong>not</strong> meet CN-436’s sats criterion (that is on oxygen ≤91%)</li>
+                <li>90% <strong>on oxygen</strong> does meet CN-436 — unless chronic hypercapnic failure is already documented, when the alert sat is ≤83%</li>
+                <li>That ≤83% line is Scale 2’s red score. CN-436 only uses it for confirmed retainers. Using Scale 2 for every COPD patient would make 90% on oxygen look “fine” and you could miss a Trust pre-alert</li>
+                <li>Handover: “NEWS 3, all from sats, usual 90% on air, Scale 1, targeting 88–92%.” Alert if they meet CN-436 or you are significantly concerned</li>
+              </ul>
+            </div>
+          </div>`,
+        notes: "Agree with the room that a single 3 can be a big deal — then open CN-436. Read the sats line out loud: on oxygen ≤91%, or ≤83% in chronic HCRF. That is the Trust encoding Scale 1 vs Scale 2 into pre-alert. 90% on air at baseline is Scale 1 score 3, not a CN-436 sats alert. Other CN-436 red physiology (RR ≤8 or ≥25, SBP ≤90, pulse ≤40 or ≥131, GCS <13) still alerts. Clinical concern still allows an alert."
+      },
+      {
+        kicker: "Worked example 2",
+        title: "When Scale 2 is the safer score",
+        html: `
+          <p style="margin-bottom:12px;font-size:20px">Same age, known COPD, oxygen alert card: previous type 2 failure, target 88–92%. SpO<sub>2</sub> <strong>90% on 24% Venturi</strong>.</p>
+          <table>
+            <thead>
+              <tr><th>Scale</th><th>SpO<sub>2</sub> score</th><th>Oxygen</th><th>SpO<sub>2</sub> + O<sub>2</sub></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Scale 1</strong></td>
+                <td class="score bad">3</td>
+                <td class="score mid">+2</td>
+                <td class="score bad">5</td>
+              </tr>
+              <tr>
+                <td><strong>Scale 2 — appropriate here</strong></td>
+                <td class="score good">0</td>
+                <td class="score mid">+2</td>
+                <td class="score mid">2</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style="margin-top:14px">Scale 1 would keep alarming because 90% looks too low. Staff then creep the oxygen up to “improve the NEWS”. Scale 2 exists to stop that — but only where a hospital or specialist team has already documented type 2 failure. The ambulance clinician is applying that record, not creating it.</p>`,
+        notes: "This is why Scale 2 was invented. Austin 2010: high-flow pre-hospital oxygen increased mortality in suspected COPD compared with titrated oxygen. NEWS2 Scale 2 is a scoring fix for confirmed retainers, not a treatment protocol for all COPD."
+      },
+      {
+        kicker: "Oxygen",
+        title: "How to give oxygen in COPD",
+        html: `
+          <div class="body two">
+            <div class="card ok">
+              <h3>Usual COPD target — G0390 / oxygen guideline</h3>
+              <ul>
+                <li>88–92%, or the alert-card / care-plan range</li>
+                <li>Initial dose: <strong>4 L/min via 28% Venturi</strong>, or the patient’s own mask</li>
+                <li>If RR &gt;30 on a Venturi, increase flow to 50% above the mask minimum</li>
+                <li>If SpO<sub>2</sub> stays &lt;88%, change to a simple face mask</li>
+                <li>Over 50, long-term smoker, exertional breathlessness, no other cause: treat as COPD</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>If they are critically ill</h3>
+              <ul>
+                <li>G0390: do not withhold high-concentration oxygen if the primary illness needs it</li>
+                <li>Oxygen guideline: aim 94–98% in critical illness with COPD</li>
+                <li>If conscious level or respiratory rate then falls, reduce flow and aim 88–92%</li>
+                <li>If they become drowsy, reduce oxygen and support ventilation</li>
+              </ul>
+            </div>
+          </div>`,
+        notes: "G0390 and the oxygen monograph are consistent: hypoxia is the short-term threat. Targeting 88–92% does not put them on NEWS2 Scale 2. Say that out loud."
+      },
+      {
+        kicker: "Treatment",
+        title: "Bronchodilators, nebulisers and the 6-minute rule",
+        html: `
+          <div class="body two" style="flex:none">
+            <div class="card">
+              <h3>Adult doses from live JRCALC</h3>
+              <ul>
+                <li>Sit forwards if blood pressure allows</li>
+                <li><strong>Salbutamol 5 mg</strong> neb. Repeat every <strong>5 minutes</strong> unless side-effects dominate (tremor, HR &gt;140). No maximum number of salbutamol doses</li>
+                <li><strong>Ipratropium 500 micrograms</strong> neb <strong>once</strong> in severe cases, or if unresponsive to salbutamol</li>
+                <li>Protect the eyes — caution in glaucoma</li>
+                <li><strong>Hydrocortisone 100 mg</strong> slow IV (≥2 min) or IM</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>What the 6 minutes actually limits</h3>
+              <ul>
+                <li>How long <strong>oxygen drives each nebuliser</strong> — not a written maximum number of nebs</li>
+                <li>Do not leave an oxygen-driven neb running for a full 10–15 minutes</li>
+                <li>Applies if <strong>COPD is a possibility</strong> — not only proven type 2 failure</li>
+                <li>After each 6-minute run: stop the oxygen drive, reassess, aim 88–92%</li>
+              </ul>
+            </div>
+          </div>
+          <div class="diagram-row" style="margin-top:12px">
+            <div class="step green"><h3>1. Salbutamol 5 mg</h3><p>Oxygen drive for <strong>6 minutes</strong></p></div>
+            <div class="step gold"><h3>2. Stop the drive</h3><p>Off the neb mask. Aim <strong>88–92%</strong></p></div>
+            <div class="step dark"><h3>3. Still symptomatic?</h3><p>Further 6-minute run if clinically indicated</p></div>
+            <div class="step red" style="background:var(--green)"><h3>Ipratropium</h3><p>500 micrograms <strong>once only</strong></p></div>
+          </div>`,
+        notes: "Concede this if challenged: G0390 does not say ‘maximum two oxygen-powered nebs’. It says limit oxygen-driven nebulisation to 6 minutes. Salbutamol may still be repeated. Each O2-driven episode should still be a 6-minute run, not a continuous neb."
+      },
+      {
+        kicker: "The guideline text",
+        title: "Where the 6-minute rule is written",
+        html: `
+          <div class="body">
+            <div class="card">
+              <h3>JRCALC G0390 — Bronchodilators</h3>
+              <p style="font-size:18px">“Limit oxygen-driven nebulisation to 6 minutes. If journey time is significant, consider a further 6 minutes of nebulisation therapy ONLY if clinically indicated, but aim for a target saturation within the range of 88–92%.”</p>
+            </div>
+            <div class="card" style="margin-top:10px">
+              <h3>JRCALC Salbutamol and Ipratropium</h3>
+              <p style="font-size:18px">Both monographs: “If COPD is a possibility limit nebulisation with oxygen to 6 minutes.”</p>
+              <p class="small" style="margin-top:8px">That is COPD as a possibility — not “only if type 2 failure is proven”.</p>
+            </div>
+            <div class="card ok" style="margin-top:10px">
+              <h3>BTS emergency oxygen — ambulance / pre-hospital</h3>
+              <p style="font-size:18px">“During ambulance journeys, oxygen driven nebulisers may be used in the absence of an air-driven compressor system. If oxygen is used it should be limited to 6 minutes for patients with known COPD. This will deliver most of the nebulised drug dose but limit the risk of hypercapnic respiratory failure.”</p>
+            </div>
+          </div>`,
+        notes: "Read the quotes. Then say what they do not say: there is no sentence that reads ‘maximum of two oxygen-powered nebs’. The 6 minutes is the duration of oxygen as the driving gas. Salbutamol may be repeated. Ipratropium once."
+      },
+      {
+        kicker: "Treatment",
+        title: "What to do after a 6-minute oxygen-driven neb",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>What G0390 actually says</h3>
+              <ul>
+                <li>Limit oxygen-driven nebulisation to 6 minutes</li>
+                <li>If the journey is significant, consider a further 6 minutes only if clinically indicated</li>
+                <li>Aim 88–92% throughout</li>
+                <li>Salbutamol may be repeated at regular intervals. Ipratropium once</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>What it does not say</h3>
+              <ul>
+                <li>It does <strong>not</strong> write a maximum of two oxygen-powered nebs for the whole job</li>
+                <li>If they still need bronchodilator and oxygen is the only driving gas you have, a further 6-minute oxygen-driven neb can be argued as clinically indicated</li>
+                <li>What you must not do is leave oxygen driving the neb continuously, or for 10–15 minutes at a time</li>
+                <li>Between runs: off the neb mask, titrate to 88–92%</li>
+              </ul>
+            </div>
+          </div>
+          <p class="small" style="margin-top:12px">Teach the 6-minute duration limit. Do not teach a two-neb cap that is not in the text.</p>`,
+        notes: "If someone in the room makes the user’s point, agree. The operational rule is: 6 minutes of oxygen drive, stop, titrate, repeat as 6-minute episodes if they still need the drug and you have no air compressor. Ipratropium remains once only. Time-critical features still override."
+      },
+      {
+        kicker: "Package of care",
+        title: "The rest of the job",
+        html: `
+          <div class="body three">
+            <div class="card">
+              <h3>On scene / en route</h3>
+              <ul>
+                <li>Follow the alert card / individualised plan — the patient often knows what works</li>
+                <li>12-lead ECG if indicated</li>
+                <li>Pain score, fluids if required, blood glucose if appropriate</li>
+                <li>Watch for tiring, not just the SpO<sub>2</sub> number</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Hospital rather than home if</h3>
+              <ul>
+                <li>Cannot cope at home, living alone, or not coping</li>
+                <li>Severe breathlessness, poor/deteriorating condition</li>
+                <li>Cyanosis, new/worsening oedema, impaired consciousness, acute confusion</li>
+                <li>Already on LTOT, rapid onset, significant comorbidity</li>
+                <li>SpO<sub>2</sub> &lt;90%</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>Handover language</h3>
+              <ul>
+                <li>NEWS2 total <strong>and the components</strong> — e.g. “3, all from sats”</li>
+                <li>Scale 1, unless a hospital/specialist record of type 2 failure is already documented</li>
+                <li>Usual saturations if known, current SpO<sub>2</sub>, target, device</li>
+                <li>Alert card / previous NIV / previous hypercapnia if known</li>
+              </ul>
+            </div>
+          </div>`,
+        notes: "Receiving staff should not have to guess the scale. ‘NEWS 3 on Scale 1, targeting 88–92, 90% on 28% Venturi, no documented type 2’ is a high-quality sentence."
+      },
+      {
+        type: "poll",
+        pollId: "q-case",
+        layout: "case",
+        kicker: "Your turn  ·  live vote",
+        title: "75, known COPD, SpO<sub>2</sub> 90% on air",
+        prompt: "Which NEWS2 scale should be used?",
+        votePrompt: "75, known COPD, not on home oxygen. Increased SOB and secretions, no fever. Pulse and RR slightly up. SpO<sub>2</sub> 90% on air, talking in short sentences. Which NEWS2 scale should be used?",
+        options: [
+          "Scale 1 — default unless type 2 is already documented",
+          "Scale 2 — because they have COPD"
+        ],
+        correct: 0,
+        detail: `
+          <div class="poll-detail">
+            <div class="poll-facts">
+              <h3>On scene</h3>
+              <ul>
+                <li>75 years old, known COPD</li>
+                <li>Not on home oxygen</li>
+                <li>Increased shortness of breath and secretions</li>
+                <li>No pyrexia</li>
+                <li>Pulse and respiration rate slightly up</li>
+                <li>SpO<sub>2</sub> <strong>90% on air</strong></li>
+                <li>Talking in short sentences</li>
+              </ul>
+              <p class="small" style="margin-top:8px">No alert card. No documented type 2 failure. Teaching bars, not the official RCP chart.</p>
+            </div>
+            <div>
+              <h3 style="font-size:15px;color:var(--navy);margin-bottom:2px">Scale 1 — default</h3>
+              <div class="bars">
+                <span class="r mark" style="flex:2.2">≤91%<br>score 3</span>
+                <span class="a" style="flex:1.4">92–93%<br>2</span>
+                <span class="y" style="flex:1.4">94–95%<br>1</span>
+                <span class="g" style="flex:2.2">96%+<br>0</span>
+              </div>
+              <p class="small">90% on air sits in the red.</p>
+              <h3 style="font-size:15px;color:var(--navy);margin:8px 0 2px">Scale 2 — only if type 2 is already documented</h3>
+              <div class="bars">
+                <span class="r" style="flex:1.2">≤83%<br>3</span>
+                <span class="a" style="flex:0.9">84–85<br>2</span>
+                <span class="y" style="flex:0.9">86–87<br>1</span>
+                <span class="g mark" style="flex:2">88–92%<br>0</span>
+                <span class="y" style="flex:0.8">93–94<br>1</span>
+                <span class="a" style="flex:0.8">95–96<br>2</span>
+                <span class="r" style="flex:0.8">97%+<br>3</span>
+              </div>
+              <p class="small">90% on air sits in the green — hypoxia is hidden.</p>
+            </div>
+          </div>`,
+        teach: "<strong>Scale 1.</strong> COPD, extra secretions and 90% on air do not document type 2 failure. Not being on home oxygen does not either. Talking in short sentences means they are unwell, not that you may invent Scale 2. On Scale 1, 90% scores <strong>3</strong>. On Scale 2 it would score <strong>0</strong> and look “fine”. Still target 88–92%. Handover the scale you used.",
+        notes: "This is the sample live vote. Leave it up while the room scans the QR or uses the Teams join link. Typical wrong answer is Scale 2 because they have COPD. Point at the two bars: 90% is red on Scale 1 and green on Scale 2. Space reveals. Then Case 2 is the documented retainer."
+      },
+      {
+        kicker: "Case 2",
+        title: "64, COPD, alert card, becoming drowsy on high-flow O₂",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>Scene</h3>
+              <p>Alert card: previous type 2 respiratory failure, target 88–92%, 24% Venturi. Community first responder left them on 15 L reservoir. Now drowsy, RR 10, SpO<sub>2</sub> 99%.</p>
+            </div>
+            <div class="card warn">
+              <h3>Safe plan</h3>
+              <ul>
+                <li>This patient already has documented type 2 failure — apply Scale 2; do not “decide” it</li>
+                <li>Take off high-flow oxygen. Controlled oxygen to 88–92%</li>
+                <li>Support ventilation if they do not rouse</li>
+                <li>Time-critical if tiring or failing to ventilate</li>
+                <li>NEWS2 <strong>Scale 2</strong> because type 2 failure is already documented — not because they have COPD</li>
+                <li>99% on oxygen would score high on Scale 2 — over-oxygenation is the problem</li>
+              </ul>
+            </div>
+          </div>`,
+        notes: "Be blunt. RCP’s ‘competent clinical decision-maker’ is not the ambulance clinician inventing Scale 2 from a COPD history. Case 2 is applying an alert card that already states type 2 failure."
+      },
+      {
+        type: "poll",
+        pollId: "q1",
+        kicker: "Check  1 of 5",
+        title: "True or false?",
+        prompt: "Every COPD patient should be scored on NEWS2 Scale 2.",
+        options: ["True", "False"],
+        correct: 1,
+        teach: "False. G0390 says some patients are at increased risk of type 2 failure — not all. Ambulance clinicians do not choose Scale 2 on scene. Default is Scale 1 unless a hospital/specialist record of type 2 failure is already there.",
+        notes: "First assessment of whether the session worked. Space reveals. If the room goes True, slow down on the take-home."
+      },
+      {
+        type: "poll",
+        pollId: "q2",
+        kicker: "Check  2 of 5",
+        title: "Oxygen target vs scale",
+        prompt: "Can you target SpO<sub>2</sub> 88–92% while still using Scale 1?",
+        options: ["Yes", "No"],
+        correct: 0,
+        teach: "Yes. G0390 targets 88–92% and still only asks you to calculate a NEWS2 score. RCP: Scale 2 is a separate, documented decision.",
+        notes: "Second assessment question. This is the distinction most staff blur."
+      },
+      {
+        type: "poll",
+        pollId: "q3",
+        kicker: "Check  3 of 5",
+        title: "The critically ill",
+        prompt: "COPD patient in shock, SpO<sub>2</sub> 80%. Withhold high-flow oxygen?",
+        options: ["Yes — COPD, so keep it controlled", "No — do not leave them hypoxic"],
+        correct: 1,
+        teach: "No. G0390: do not withhold high-concentration oxygen if the primary illness needs it. Hypoxia is the greater short-term risk.",
+        notes: "Watch for people still withholding oxygen from shock because of COPD."
+      },
+      {
+        type: "poll",
+        pollId: "q4",
+        kicker: "Check  4 of 5",
+        title: "Nebuliser drive",
+        prompt: "An oxygen-driven neb in COPD. How long may oxygen drive it?",
+        options: ["2 minutes", "6 minutes", "Until the chamber is empty"],
+        correct: 1,
+        teach: "6 minutes per run, then stop the oxygen drive and aim 88–92%. G0390 does not write a maximum number of nebs. Salbutamol may be repeated as further 6-minute oxygen-driven episodes if that is the only method you have. Ipratropium once. Applies if COPD is a possibility — not only type 2 failure.",
+        notes: "If they say until empty, correct firmly. Duration is the drive time, not a two-neb cap."
+      },
+      {
+        type: "poll",
+        pollId: "q5",
+        kicker: "Check  5 of 5",
+        title: "Not every breathless COPD is an exacerbation",
+        prompt: "Chest pain and fever in “COPD” — what now?",
+        options: ["Treat as a simple exacerbation", "Reconsider the diagnosis"],
+        correct: 1,
+        teach: "Uncommon in simple exacerbation. Reconsider pneumonia, ACS, PE, pneumothorax, heart failure. If the room only answers one thing today: COPD does not choose Scale 2. A previous hospital or specialist record of type 2 failure does.",
+        notes: "Finish the quiz on differential, then the take-home lines."
+      },
+      {
+        kicker: "Take home",
+        title: "Leave with these five lines",
+        html: `
+          <div class="body">
+            <div class="banner build">1. G0390: some COPD patients are at risk of type 2 failure — not all.</div>
+            <div class="banner teal build" style="margin-top:8px">2. Do not put every COPD patient on NEWS2 Scale 2.</div>
+            <div class="banner dark build" style="margin-top:8px">3. Target 88–92% oxygen in COPD — that does not choose the scale.</div>
+            <div class="banner dark build" style="margin-top:8px">4. Scale 2 only if a hospital/specialist team has already documented type 2 failure — not an on-scene decision.</div>
+            <div class="banner dark build" style="margin-top:8px">5. Never leave a critically ill COPD patient hypoxic.</div>
+          </div>`,
+        notes: "Read them slowly. Space reveals each line. If time remains, return to the opening hands-up question and see if the hands have changed."
+      },
+      {
+        kicker: "Sources",
+        title: "What this session is based on",
+        html: `
+          <div class="body two">
+            <div class="card">
+              <h3>Clinical guidance</h3>
+              <ul>
+                <li>JRCALC Plus G0390 COPD v20.40 (6 September 2023)</li>
+                <li>JRCALC Oxygen D0270 — 4 L/min 28% Venturi, target 88–92%</li>
+                <li>JRCALC Salbutamol D0300, Ipratropium D0200, Hydrocortisone D0180</li>
+                <li>NICE NG115 and BTS emergency oxygen (cited in G0390)</li>
+              </ul>
+            </div>
+            <div class="card">
+              <h3>NEWS2</h3>
+              <ul>
+                <li>RCP, National Early Warning Score (NEWS) 2, 2017</li>
+                <li>RCP NEWS2 additional implementation guidance, March 2020 — oxygen scales</li>
+                <li>Williams B. Clin Med 2019;19:94–95 — most AECOPD patients do not have HCRF</li>
+                <li>WMAS CN-436 Pre-alerting of Patients V8 (20 July 2026) — sats on oxygen ≤91%, or ≤83% in chronic hypercapnic respiratory failure</li>
+              </ul>
+            </div>
+          </div>
+          <p class="small" style="margin-top:12px">Teaching summary of JRCALC Plus, not a substitute for the live guideline. NEWS2 material acknowledged to the Royal College of Physicians. Diagrams in this deck are original teaching graphics, not official RCP or JRCALC artwork. Recheck local PGDs and stock — prednisolone is named in G0390 but may not be on every Trust meds list.</p>`,
+        notes: "Ask staff to open G0390 after the session. If the ePR auto-selects Scale 2 from a COPD tick-box, that is a governance issue worth feeding back."
+      },
+      {
+        type: "title",
+        kicker: "Questions",
+        title: "What will you do differently on the next COPD job?",
+        subtitle: "If type 2 failure is not already documented by a hospital or specialist team, score NEWS2 on Scale 1. Still titrate oxygen to 88–92%.",
+        meta: "Space reveals points, then the next slide  ·  S presenter view  ·  F fullscreen",
+        notes: "Finish on the behaviour change, not ‘any questions’ as an empty ritual. Offer to stay for ePR / local pathway queries."
+      }
+    ];
+
+    const stage = document.getElementById("stage");
+    const notesEl = document.getElementById("notes");
+    const bar = document.getElementById("bar");
+    const count = document.getElementById("count");
+    const nextTitle = document.getElementById("nextTitle");
+    const timerEl = document.getElementById("timer");
+    const pvBtn = document.getElementById("pvBtn");
+    const pvHint = document.getElementById("pvHint");
+    const STORE = "copd-cpd-state";
+    const CHANNEL = "copd-cpd-deck";
+    const params = new URLSearchParams(location.search);
+    const requested = params.get("view");
+    let view = requested === "presenter" || requested === "audience" || requested === "vote"
+      ? requested
+      : "single";
+    let i = 0;
+    let build = 0;
+    let dir = 1;
+    const hub = {
+      ok: false,
+      token: params.get("host") || sessionStorage.getItem("copd-host-token") || "",
+      join: "",
+      poll: null
+    };
+    let lastHostId = null;
+    try {
+      const raw = localStorage.getItem(STORE);
+      if (raw) {
+        const o = raw.startsWith("{") ? JSON.parse(raw) : { i: Number(raw), b: 0 };
+        i = Number(o.i) || 0;
+        build = Number(o.b) || 0;
+      }
+    } catch (err) { /* start at 0 */ }
+    if (!Number.isInteger(i) || i < 0 || i >= slides.length) i = 0;
+    let timerStarted = Date.now();
+    let audienceWin = null;
+    const channel = typeof BroadcastChannel === "function" ? new BroadcastChannel(CHANNEL) : null;
+
+    function applyView() {
+      document.body.classList.toggle("presenter", view === "presenter");
+      document.body.classList.toggle("audience", view === "audience");
+      if (view === "presenter") {
+        document.title = "COPD CPD — Presenter";
+        pvBtn.textContent = "Audience window";
+        notesEl.classList.add("visible");
+        pvHint.textContent = audienceWin && !audienceWin.closed
+          ? "Share the Audience window with the room projector and in Teams (Share window). Keep this presenter screen on your laptop. Paste the join link in the Teams chat so remote staff can vote."
+          : "Popup blocked? Open a second copy and add ?view=audience to the address. Share that window in the room and in Teams.";
+      } else if (view === "audience") {
+        document.title = "COPD CPD — Audience";
+        pvBtn.hidden = true;
+        notesEl.classList.remove("visible");
+      } else {
+        document.title = "COPD in Pre-hospital Care | Ambulance CPD";
+        pvBtn.textContent = "Presenter view (S)";
+      }
+    }
+
+    function slideMarkup(s, idx) {
+      if (s.type === "title") {
+        return `<section class="slide title-slide" data-i="${idx}">
+          <div class="kicker">${s.kicker}</div>
+          <h1>${s.title}</h1>
+          <p class="subtitle">${s.subtitle}</p>
+          <p class="meta">${s.meta}</p>
+          <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40</span><span>${idx + 1} / ${slides.length}</span></div>
+        </section>`;
+      }
+      if (s.type === "poll") {
+        const opts = s.options.map((label, n) => `
+          <div class="poll-opt" data-i="${n}">
+            <span class="poll-lab">${label}</span>
+            <span class="poll-n">0</span>
+            <span class="poll-bar"><i></i></span>
+          </div>`).join("");
+        const layout = s.layout ? ` poll-${s.layout}` : "";
+        return `<section class="slide poll-slide${layout}" data-i="${idx}" data-poll="${s.pollId}">
+          <div class="kicker">${s.kicker}</div>
+          <h2>${s.title}</h2>
+          <div class="body">
+            <div class="poll-top">
+              <p class="poll-prompt">${s.prompt}</p>
+              <aside class="poll-join">
+                <img alt="Join the quiz" width="132" height="132" />
+                <p class="poll-url"></p>
+                <p class="poll-phones"><span class="poll-total">0</span> phones in</p>
+              </aside>
+            </div>
+            ${s.detail || ""}
+            <div class="poll-opts">${opts}</div>
+            <div class="poll-teach">${s.teach}</div>
+            <p class="poll-host"></p>
+          </div>
+          <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+        </section>`;
+      }
+      return `<section class="slide" data-i="${idx}">
+        <div class="kicker">${s.kicker}</div>
+        <h2>${s.title}</h2>
+        ${s.html}
+        <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+      </section>`;
+    }
+
+    function buildsOn(idx) {
+      const el = stage.querySelectorAll(".slide")[idx];
+      return el ? el.querySelectorAll(".build").length : 0;
+    }
+
+    function persist() {
+      localStorage.setItem(STORE, JSON.stringify({ i, b: build }));
+      if (channel) channel.postMessage({ i, b: build });
+    }
+
+    function applySlide() {
+      const els = [...stage.querySelectorAll(".slide")];
+      els.forEach((el, idx) => {
+        const on = idx === i;
+        el.classList.toggle("back", on && dir < 0);
+        el.classList.toggle("active", on);
+      });
+      const current = els[i];
+      if (current) {
+        [...current.querySelectorAll(".build")].forEach((el, n) => {
+          el.classList.toggle("show", n < build);
+        });
+      }
+      notesEl.innerHTML = `<strong>Presenter notes</strong><br>${slides[i].notes}`;
+      bar.style.width = `${((i + 1) / slides.length) * 100}%`;
+      count.textContent = `${i + 1} / ${slides.length}`;
+      if (i + 1 < slides.length) {
+        const nxt = slides[i + 1];
+        nextTitle.textContent = nxt.title || nxt.kicker;
+      } else {
+        nextTitle.textContent = "Last slide";
+      }
+      hostFollowSlide();
+      paintPoll();
+    }
+
+    function pollRevealed() {
+      const s = slides[i];
+      if (!s || s.type !== "poll") return true;
+      const el = stage.querySelectorAll(".slide")[i];
+      if (hub.ok) return !!(hub.poll && hub.poll.id === s.pollId && hub.poll.revealed);
+      return !!(el && el.classList.contains("revealed"));
+    }
+
+    function revealCurrentPoll() {
+      const s = slides[i];
+      if (!s || s.type !== "poll") return false;
+      if (pollRevealed()) return false;
+      if (hub.ok && hub.token && view !== "audience") hostAction("reveal");
+      const el = stage.querySelectorAll(".slide")[i];
+      if (el) {
+        el.classList.add("revealed");
+        if (typeof s.correct === "number") {
+          const opt = el.querySelectorAll(".poll-opt")[s.correct];
+          if (opt) opt.classList.add("is-correct");
+        }
+      }
+      return true;
+    }
+
+    function go(n, fromRemote) {
+      const next = Math.max(0, Math.min(slides.length - 1, n));
+      dir = next >= i ? 1 : -1;
+      i = next;
+      build = dir < 0 ? buildsOn(i) : 0;
+      applySlide();
+      if (!fromRemote) persist();
+    }
+
+    function stepForward(fromRemote) {
+      if (!fromRemote && slides[i] && slides[i].type === "poll" && revealCurrentPoll()) {
+        if (!fromRemote) persist();
+        return;
+      }
+      const total = buildsOn(i);
+      if (build < total) {
+        build += 1;
+        applySlide();
+        if (!fromRemote) persist();
+        return;
+      }
+      if (i < slides.length - 1) go(i + 1, fromRemote);
+    }
+
+    function stepBack(fromRemote) {
+      if (build > 0) {
+        build -= 1;
+        applySlide();
+        if (!fromRemote) persist();
+        return;
+      }
+      if (i > 0) go(i - 1, fromRemote);
+    }
+
+    function applyRemote(data) {
+      const n = Number(data && data.i);
+      const b = Number(data && data.b);
+      if (!Number.isInteger(n) || n === i && b === build) return;
+      if (Number.isInteger(n)) {
+        dir = n >= i ? 1 : -1;
+        i = Math.max(0, Math.min(slides.length - 1, n));
+      }
+      build = Number.isInteger(b) ? b : 0;
+      applySlide();
+    }
+
+    function setHubLive(on) {
+      hub.ok = on;
+      document.body.classList.toggle("live", on);
+      document.body.classList.toggle("fallback", !on);
+      const hint = on
+        ? "Live quiz · room scans the QR · Teams: paste the join link in chat · Space reveals"
+        : "Tap an option to reveal. For a live vote in the room or on Teams, run python serve.py.";
+      stage.querySelectorAll(".poll-host").forEach((el) => { el.textContent = hint; });
+    }
+
+    function pageJoinFallback() {
+      const h = location.hostname;
+      if (h && h !== "localhost" && h !== "127.0.0.1") return location.origin + "/v";
+      return "";
+    }
+
+    function normaliseJoin(raw) {
+      let u = (raw || "").trim();
+      if (!u) return "";
+      if (!/^https?:\/\//i.test(u)) u = "https://" + u;
+      u = u.replace(/\/+$/, "");
+      u = u.replace(/\/?\?view=vote$/i, "");
+      if (!/\/v$/i.test(u)) u += "/v";
+      return u;
+    }
+
+    function setJoin(url) {
+      const join = normaliseJoin(url);
+      if (!join) return;
+      hub.join = join;
+      fillJoin();
+    }
+
+    function fillJoin() {
+      const display = document.getElementById("joinDisplay");
+      if (display) {
+        display.textContent = hub.join
+          ? hub.join.replace(/^https?:\/\//, "")
+          : "Start python serve.py for a live vote link.";
+      }
+      if (!hub.join) return;
+      stage.querySelectorAll(".poll-join").forEach((box) => {
+        const img = box.querySelector("img");
+        const url = box.querySelector(".poll-url");
+        if (img && img.dataset.src !== hub.join) {
+          img.dataset.src = hub.join;
+          img.src = "/qr.svg?u=" + encodeURIComponent(hub.join);
+        }
+        if (url) url.textContent = hub.join.replace(/^https?:\/\//, "");
+      });
+    }
+
+    async function copyJoinLink() {
+      if (!hub.join) return;
+      try {
+        await navigator.clipboard.writeText(hub.join);
+      } catch (err) {
+        window.prompt("Copy this join link into Teams chat:", hub.join);
+        return;
+      }
+      const labels = [document.getElementById("copyJoin"), document.getElementById("copyJoinBtn")];
+      labels.forEach((btn) => {
+        if (!btn) return;
+        const prev = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = prev; }, 1200);
+      });
+    }
+
+    function paintPoll() {
+      const s = slides[i];
+      const el = stage.querySelectorAll(".slide")[i];
+      if (!s || s.type !== "poll" || !el) return;
+      const poll = hub.poll && hub.poll.id === s.pollId ? hub.poll : null;
+      const total = poll ? poll.total : 0;
+      el.querySelectorAll(".poll-opt").forEach((opt, n) => {
+        const c = poll && poll.counts ? (poll.counts[n] || 0) : 0;
+        const num = opt.querySelector(".poll-n");
+        const barFill = opt.querySelector(".poll-bar i");
+        if (num) num.textContent = String(c);
+        if (barFill) barFill.style.width = total ? `${Math.round((c / total) * 100)}%` : "0%";
+        opt.classList.toggle("is-correct", !!(poll && poll.revealed && poll.correct === n));
+      });
+      const tot = el.querySelector(".poll-total");
+      if (tot) tot.textContent = String(total);
+      if (poll && poll.revealed) el.classList.add("revealed");
+      if (poll && poll.teach) {
+        const teach = el.querySelector(".poll-teach");
+        if (teach) teach.innerHTML = poll.teach;
+      }
+    }
+
+    async function hostAction(action, extra) {
+      if (!hub.token) return null;
+      try {
+        const res = await fetch("/api/host", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Host-Token": hub.token },
+          body: JSON.stringify(Object.assign({ action }, extra || {}))
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && data.poll) {
+          hub.poll = data.poll;
+          paintPoll();
+        }
+        return data;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function hostFollowSlide() {
+      if (!hub.ok || !hub.token || view === "audience" || view === "vote") return;
+      const s = slides[i];
+      if (s && s.type === "poll") {
+        if (lastHostId === s.pollId && hub.poll && hub.poll.id === s.pollId) return;
+        lastHostId = s.pollId;
+        await hostAction("start", {
+          id: s.pollId,
+          prompt: s.votePrompt || s.prompt,
+          options: s.options,
+          correct: typeof s.correct === "number" ? s.correct : null,
+          teach: s.teach || ""
+        });
+        return;
+      }
+      if (lastHostId) {
+        lastHostId = null;
+        await hostAction("idle");
+      }
+    }
+
+    async function tickHub() {
+      try {
+        const res = await fetch("/api/poll", { cache: "no-store" });
+        if (!res.ok) {
+          setHubLive(false);
+          return;
+        }
+        hub.poll = await res.json();
+        if (!hub.ok) setHubLive(true);
+        paintPoll();
+      } catch (err) {
+        setHubLive(false);
+      }
+    }
+
+    async function probeHub() {
+      try {
+        const res = await fetch("/api/join", { cache: "no-store" });
+        if (!res.ok) { setHubLive(false); return; }
+        const data = await res.json();
+        if (data.hostToken) {
+          hub.token = data.hostToken;
+          sessionStorage.setItem("copd-host-token", data.hostToken);
+        }
+        const saved = sessionStorage.getItem("copd-public-join");
+        hub.join = saved || pageJoinFallback() || data.join || "";
+        setHubLive(!!data.live);
+        fillJoin();
+        await hostFollowSlide();
+        await tickHub();
+      } catch (err) {
+        setHubLive(false);
+      }
+    }
+
+    window.go = go;
+
+    function openAudienceWindow() {
+      const url = new URL(location.href);
+      url.searchParams.set("view", "audience");
+      url.searchParams.delete("host");
+      audienceWin = window.open(url.toString(), "copd-audience");
+      applyView();
+    }
+
+    function startPresenterView() {
+      if (view === "audience") return;
+      if (view !== "presenter") {
+        view = "presenter";
+        const url = new URL(location.href);
+        url.searchParams.set("view", "presenter");
+        history.replaceState(null, "", url);
+      }
+      applyView();
+      notesEl.classList.add("visible");
+      openAudienceWindow();
+    }
+
+    document.getElementById("prev").onclick = () => stepBack();
+    document.getElementById("next").onclick = () => stepForward();
+    document.getElementById("notesBtn").onclick = () => {
+      if (view === "audience") return;
+      notesEl.classList.toggle("visible");
+    };
+    pvBtn.onclick = () => {
+      if (view === "presenter") openAudienceWindow();
+      else startPresenterView();
+    };
+    const copyJoin = document.getElementById("copyJoin");
+    const copyJoinBtn = document.getElementById("copyJoinBtn");
+    if (copyJoin) copyJoin.onclick = copyJoinLink;
+    if (copyJoinBtn) copyJoinBtn.onclick = copyJoinLink;
+    const joinOverride = document.getElementById("joinOverride");
+    if (joinOverride) {
+      const savedJoin = sessionStorage.getItem("copd-public-join") || "";
+      joinOverride.value = savedJoin;
+      joinOverride.addEventListener("change", () => {
+        const v = joinOverride.value.trim();
+        if (!v) {
+          sessionStorage.removeItem("copd-public-join");
+          probeHub();
+          return;
+        }
+        const join = normaliseJoin(v);
+        sessionStorage.setItem("copd-public-join", join);
+        joinOverride.value = join;
+        setJoin(join);
+      });
+    }
+    document.getElementById("fsBtn").onclick = () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    };
+    timerEl.onclick = () => { timerStarted = Date.now(); };
+
+    window.addEventListener("keydown", (e) => {
+      if (view === "vote") return;
+      if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); stepForward(); }
+      if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); stepBack(); }
+      if (e.key === "Home") go(0);
+      if (e.key === "End") go(slides.length - 1);
+      if ((e.key === "n" || e.key === "N") && view !== "audience") notesEl.classList.toggle("visible");
+      if (e.key === "f" || e.key === "F") document.getElementById("fsBtn").click();
+      if ((e.key === "s" || e.key === "S") && view !== "audience") startPresenterView();
+    });
+
+    window.addEventListener("storage", (e) => {
+      if (e.key !== STORE || e.newValue == null) return;
+      try { applyRemote(JSON.parse(e.newValue)); } catch (err) { /* ignore */ }
+    });
+    if (channel) {
+      channel.addEventListener("message", (e) => applyRemote(e.data || {}));
+    }
+
+    setInterval(() => {
+      const sec = Math.floor((Date.now() - timerStarted) / 1000);
+      const m = String(Math.floor(sec / 60)).padStart(2, "0");
+      const s = String(sec % 60).padStart(2, "0");
+      timerEl.textContent = `${m}:${s}`;
+    }, 1000);
+
+    if (view === "vote") {
+      runVoteApp();
+    } else {
+      applyView();
+      stage.innerHTML = `<div class="deck">${slides.map(slideMarkup).join("")}</div>`;
+      if (build > buildsOn(i)) build = buildsOn(i);
+      applySlide();
+      stage.addEventListener("click", (e) => {
+        const opt = e.target.closest(".poll-opt");
+        if (!opt || hub.ok || view === "audience") return;
+        const slide = opt.closest(".poll-slide");
+        if (slide && Number(slide.dataset.i) === i) revealCurrentPoll();
+      });
+      probeHub();
+      setInterval(tickHub, 700);
+    }
+
+    function runVoteApp() {
+      document.body.classList.add("vote");
+      document.getElementById("voteApp").hidden = false;
+      document.title = "COPD CPD — Vote";
+      const meta = document.querySelector('meta[name="viewport"]');
+      if (meta) meta.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1");
+      const statusEl = document.getElementById("voteStatus");
+      const promptEl = document.getElementById("votePrompt");
+      const optsEl = document.getElementById("voteOpts");
+      const teachEl = document.getElementById("voteTeach");
+      let voter = localStorage.getItem("copd-voter-id");
+      if (!voter) {
+        voter = (crypto.randomUUID && crypto.randomUUID()) || ("v" + Math.random().toString(36).slice(2));
+        localStorage.setItem("copd-voter-id", voter);
+      }
+      let picked = null;
+      let seenId = null;
+      async function vote(choice) {
+        picked = choice;
+        try {
+          await fetch("/api/vote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ voter, choice })
+          });
+        } catch (err) { /* next tick will show state */ }
+        draw();
+      }
+      function draw(poll) {
+        if (arguments.length) hub.poll = poll;
+        const p = hub.poll;
+        if (!p || !p.id || (!p.open && !p.revealed)) {
+          statusEl.textContent = hub.ok === false
+            ? "Cannot reach the laptop. Join the same Wi-Fi, then open this link again."
+            : "Waiting for a question…";
+          promptEl.textContent = "";
+          optsEl.innerHTML = "";
+          teachEl.classList.remove("show");
+          teachEl.textContent = "";
+          return;
+        }
+        if (p.id !== seenId) {
+          seenId = p.id;
+          picked = null;
+        }
+        promptEl.innerHTML = p.prompt || "";
+        if (p.revealed) statusEl.textContent = "Answer in. Here is the teaching point.";
+        else if (picked != null) statusEl.textContent = "Vote in. You can change it until the room moves on.";
+        else statusEl.textContent = "Tap one answer";
+        optsEl.innerHTML = "";
+        (p.options || []).forEach((label, n) => {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "vote-btn";
+          btn.textContent = label;
+          if (picked === n) btn.classList.add("picked");
+          if (p.revealed && p.correct === n) btn.classList.add("right");
+          if (p.revealed && picked === n && p.correct != null && p.correct !== n) btn.classList.add("wrong");
+          btn.disabled = !!p.revealed;
+          btn.onclick = () => vote(n);
+          optsEl.appendChild(btn);
+        });
+        if (p.revealed && p.teach) {
+          teachEl.innerHTML = p.teach;
+          teachEl.classList.add("show");
+        } else {
+          teachEl.classList.remove("show");
+          teachEl.textContent = "";
+        }
+      }
+      async function tick() {
+        try {
+          const res = await fetch("/api/poll", { cache: "no-store" });
+          if (!res.ok) { hub.ok = false; draw(null); return; }
+          hub.ok = true;
+          draw(await res.json());
+        } catch (err) {
+          hub.ok = false;
+          draw(null);
+        }
+      }
+      tick();
+      setInterval(tick, 700);
+    }
+  </script>
+</body>
+</html>

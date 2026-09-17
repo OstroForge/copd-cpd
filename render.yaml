@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: copd-cpd
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python serve.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: HOST_TOKEN
+        generateValue: true

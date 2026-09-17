@@ -704,6 +704,23 @@
     .n2-bands.n2-spo2-2 { min-height: 42px; }
     .poll-slide:not(.poll-results) .poll-n,
     .poll-slide:not(.poll-results) .poll-bar { visibility: hidden; }
+    body:not(.audience):not(.presenter) .poll-slide:not(.poll-results) .poll-n,
+    body:not(.audience):not(.presenter) .poll-slide:not(.poll-results) .poll-bar { visibility: visible; }
+    .host-live {
+      display: none;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 10px;
+      align-items: start;
+      margin-top: 6px;
+      padding: 8px 10px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+    body:not(.audience):not(.presenter) .poll-slide .host-live { display: grid; }
+    body.audience .host-live,
+    body.presenter .host-live { display: none !important; }
+    .host-live .n2-stat span { font-size: 22px; }
+    .host-live .n2-spread-row { font-size: 13px; grid-template-columns: 110px 1fr auto; }
     .poll-results .poll-teach { display: block; }
     .poll-results .poll-teach:empty { display: none; }
     .n2-spread-title {
@@ -1887,6 +1904,19 @@
             </div>
             ${detail}
             ${choices}
+            ${s.layout === "news2" ? `
+            <div class="host-live">
+              <div class="n2-live">
+                <div class="n2-stat"><span class="n2-s1">0</span><label>used Scale 1</label></div>
+                <div class="n2-stat"><span class="n2-s2">0</span><label>used Scale 2</label></div>
+                <div class="n2-stat n2-stat-ok"><span class="n2-ok">0</span><label class="n2-ok-lab">correct NEWS</label></div>
+                <div class="n2-stat"><span class="poll-total">0</span><label>responses</label></div>
+              </div>
+              <div>
+                <h3 class="n2-spread-title">Live scores by scale</h3>
+                <div class="n2-spread host-live-spread"></div>
+              </div>
+            </div>` : ""}
             <p class="poll-host"></p>
           </div>
           <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
@@ -2147,7 +2177,7 @@
       const counts = document.getElementById("pvLiveCounts");
       const spreadBox = document.getElementById("pvLiveSpread");
       if (!live || !counts || !spreadBox) return;
-      const show = view === "presenter" && s && (s.type === "poll" || s.type === "poll-results");
+      const show = view !== "audience" && view !== "vote" && s && (s.type === "poll" || s.type === "poll-results");
       live.hidden = !show;
       if (!show) return;
       const q = s.type === "poll-results"
@@ -2178,7 +2208,36 @@
       if (!s || !el || (s.type !== "poll" && s.type !== "poll-results")) return;
       const total = poll ? poll.total : 0;
       el.querySelectorAll(".poll-total").forEach((n) => { n.textContent = String(total); });
-      if (s.type === "poll") return;
+      if (s.type === "poll") {
+        if (view !== "audience") {
+          const q = s;
+          if (q.layout === "news2") {
+            const set = (sel, val) => {
+              const n = el.querySelector(sel);
+              if (n) n.textContent = String(val);
+            };
+            set(".n2-s1", poll ? (poll.scale1 || 0) : 0);
+            set(".n2-s2", poll ? (poll.scale2 || 0) : 0);
+            set(".n2-ok", poll ? (poll.correctCount || poll.correctScale1 || 0) : 0);
+            const okLab = el.querySelector(".n2-ok-lab");
+            const scale = (poll && poll.expectedScale) || q.expectedScale;
+            if (okLab && scale) okLab.textContent = `correct NEWS on Scale ${scale}`;
+            paintSpread(el.querySelector(".host-live-spread"), poll && poll.spread, {
+              scale: scale,
+              total: (poll && poll.expectedTotal) || q.expectedTotal
+            });
+          } else {
+            el.querySelectorAll(".poll-opt").forEach((opt, n) => {
+              const c = poll && poll.counts ? (poll.counts[n] || 0) : 0;
+              const num = opt.querySelector(".poll-n");
+              const barFill = opt.querySelector(".poll-bar i");
+              if (num) num.textContent = String(c);
+              if (barFill) barFill.style.width = total ? `${Math.round((c / total) * 100)}%` : "0%";
+            });
+          }
+        }
+        return;
+      }
       const q = slides.find((x) => x.type === "poll" && x.pollId === s.pollId) || s;
       if (q.layout === "news2") {
         const set = (sel, val) => {

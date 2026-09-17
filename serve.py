@@ -17,6 +17,8 @@ or a public URL (cloudflared / Render) and set PUBLIC_URL to that origin.
 """
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
 import secrets
@@ -50,6 +52,7 @@ POLL = {
     "revealed": False,
     "votes": {},
 }
+HISTORY = {}
 
 
 def lan_ips() -> list[str]:
@@ -222,10 +225,18 @@ def send_json(handler: SimpleHTTPRequestHandler, payload: dict, status: int = 20
     handler.wfile.write(body)
 
 
-def send_bytes(handler: SimpleHTTPRequestHandler, body: bytes, content_type: str, status: int = 200) -> None:
+def send_bytes(
+    handler: SimpleHTTPRequestHandler,
+    body: bytes,
+    content_type: str,
+    status: int = 200,
+    filename: str | None = None,
+) -> None:
     handler.send_response(status)
     handler.send_header("Content-Type", content_type)
     handler.send_header("Cache-Control", "no-store")
+    if filename:
+        handler.send_header("Content-Disposition", f'attachment; filename="{filename}"')
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
@@ -244,8 +255,103 @@ def same_origin(handler: SimpleHTTPRequestHandler) -> bool:
     return False
 
 
+def snapshot_poll() -> None:
+    pid = POLL.get("id")
+    if not pid or not POLL.get("votes"):
+        return
+    HISTORY[pid] = {
+        "id": pid,
+        "kind": POLL.get("kind"),
+        "prompt": POLL.get("prompt") or "",
+        "options": list(POLL.get("options") or []),
+        "expectedTotal": POLL.get("expectedTotal"),
+        "expectedScale": POLL.get("expectedScale"),
+        "correct": POLL.get("correct"),
+        "votes": dict(POLL.get("votes") or {}),
+    }
+
+
+def results_csv() -> bytes:
+    snapshot_poll()
+    buf = io.StringIO()
+    fields = [
+        "poll_id",
+        "prompt",
+        "kind",
+        "anonymous_id",
+        "scale",
+        "news_total",
+        "rr",
+        "spo2",
+        "air_or_oxygen",
+        "sbp",
+        "pulse",
+        "consciousness",
+        "temp",
+        "choice",
+        "choice_label",
+        "correct",
+    ]
+    writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for pid, snap in HISTORY.items():
+        options = snap.get("options") or []
+        votes = snap.get("votes") or {}
+        for anon, vote in enumerate(votes.values(), 1):
+            row = {
+                "poll_id": pid,
+                "prompt": snap.get("prompt") or "",
+                "kind": snap.get("kind") or "",
+                "anonymous_id": anon,
+                "scale": "",
+                "news_total": "",
+                "rr": "",
+                "spo2": "",
+                "air_or_oxygen": "",
+                "sbp": "",
+                "pulse": "",
+                "consciousness": "",
+                "temp": "",
+                "choice": "",
+                "choice_label": "",
+                "correct": "",
+            }
+            if isinstance(vote, dict):
+                scores = vote.get("scores") or {}
+                scale = vote.get("scale")
+                total = vote.get("total")
+                row["scale"] = scale
+                row["news_total"] = total
+                row["rr"] = scores.get("rr", "")
+                row["spo2"] = scores.get("spo2", "")
+                row["air_or_oxygen"] = scores.get("o2", "")
+                row["sbp"] = scores.get("sbp", "")
+                row["pulse"] = scores.get("pulse", "")
+                row["consciousness"] = scores.get("con", "")
+                row["temp"] = scores.get("temp", "")
+                expected_scale = snap.get("expectedScale")
+                expected_total = snap.get("expectedTotal")
+                if expected_scale is not None and expected_total is not None:
+                    row["correct"] = (
+                        "yes"
+                        if scale == expected_scale and total == expected_total
+                        else "no"
+                    )
+            elif isinstance(vote, int):
+                row["choice"] = vote
+                if 0 <= vote < len(options):
+                    row["choice_label"] = options[vote]
+                expected = snap.get("correct")
+                if isinstance(expected, int):
+                    row["correct"] = "yes" if vote == expected else "no"
+            writer.writerow(row)
+    return buf.getvalue().encode("utf-8-sig")
+
+
 def authorised_host(handler: SimpleHTTPRequestHandler) -> bool:
-    token = handler.headers.get("X-Host-Token") or ""
+    parsed = urlparse(handler.path)
+    query_token = (parse_qs(parsed.query).get("host") or [""])[0]
+    token = handler.headers.get("X-Host-Token") or query_token
     if token and token == HOST_TOKEN:
         return True
     if handler.headers.get("X-Presenter-Role") == "1" and same_origin(handler):
@@ -282,6 +388,14 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/poll":
             with LOCK:
                 send_json(self, public_poll())
+            return
+        if path == "/api/results.csv":
+            if not authorised_host(self):
+                send_json(self, {"ok": False, "error": "forbidden"}, 403)
+                return
+            with LOCK:
+                body = results_csv()
+            send_bytes(self, body, "text/csv; charset=utf-8", filename="copd-cpd-results.csv")
             return
         if path == "/qr.svg":
             send_bytes(self, qr_svg(requested_join(self)), "image/svg+xml; charset=utf-8")
@@ -328,6 +442,7 @@ class Handler(SimpleHTTPRequestHandler):
                         "total": sum(parsed.values()),
                         "scores": parsed,
                     }
+                    snapshot_poll()
                     send_json(self, {"ok": True, "poll": public_poll()})
                     return
                 try:
@@ -339,6 +454,7 @@ class Handler(SimpleHTTPRequestHandler):
                     send_json(self, {"ok": False, "error": "bad choice"}, 400)
                     return
                 POLL["votes"][voter] = choice
+                snapshot_poll()
                 send_json(self, {"ok": True, "poll": public_poll()})
             return
         if path == "/api/host":
@@ -362,6 +478,7 @@ class Handler(SimpleHTTPRequestHandler):
                         send_json(self, {"ok": True, "poll": public_poll()})
                         return
                     if new_id != POLL["id"] or POLL.get("kind") != kind:
+                        snapshot_poll()
                         POLL["votes"] = {}
                     POLL["id"] = new_id
                     POLL["kind"] = kind
@@ -391,7 +508,9 @@ class Handler(SimpleHTTPRequestHandler):
                 elif action == "reveal":
                     POLL["revealed"] = True
                     POLL["open"] = False
+                    snapshot_poll()
                 elif action == "idle":
+                    snapshot_poll()
                     POLL["open"] = False
                     POLL["id"] = None
                     POLL["kind"] = "choice"

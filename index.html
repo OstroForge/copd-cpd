@@ -500,9 +500,13 @@
       margin-top: 6px;
     }
     body.audience #copyJoinBtn,
-    body.vote #copyJoinBtn { display: none; }
-    body:not(.live) #copyJoinBtn { display: none; }
-    body.presenter #copyJoinBtn { display: none; }
+    body.vote #copyJoinBtn,
+    body.audience #csvBtnBar,
+    body.vote #csvBtnBar { display: none; }
+    body:not(.live) #copyJoinBtn,
+    body:not(.live) #csvBtnBar { display: none; }
+    body.presenter #copyJoinBtn,
+    body.presenter #csvBtnBar { display: none; }
 
     .poll-slide .body {
       display: flex;
@@ -932,6 +936,7 @@
       <div class="pv-kicker">Room + Teams join</div>
       <p class="pv-join-url" id="joinDisplay">Start python serve.py for a live vote link.</p>
       <button type="button" id="copyJoin">Copy join link</button>
+      <button type="button" id="csvBtn">Download results CSV</button>
       <input id="joinOverride" type="url" placeholder="Optional public URL for Teams voting" />
     </div>
     <button type="button" class="pv-timer" id="timer" title="Click to reset timer">00:00</button>
@@ -945,6 +950,7 @@
     <button type="button" id="notesBtn">Notes (N)</button>
     <button type="button" id="pvBtn">Presenter view (S)</button>
     <button type="button" id="copyJoinBtn">Copy join link</button>
+    <button type="button" id="csvBtnBar">Download CSV</button>
     <button type="button" id="fsBtn">Fullscreen (F)</button>
   </div>
   <div id="voteApp" hidden>
@@ -2121,6 +2127,36 @@
       });
     }
 
+    async function downloadResults() {
+      if (view === "audience" || view === "vote") return;
+      try {
+        const headers = {};
+        if (hub.token) headers["X-Host-Token"] = hub.token;
+        if (view !== "audience" && view !== "vote") headers["X-Presenter-Role"] = "1";
+        const res = await fetch("/api/results.csv", { headers, cache: "no-store" });
+        if (!res.ok) {
+          window.alert("Could not download results. Open the presenter link, then try again.");
+          return;
+        }
+        const text = await res.text();
+        if (text.trim().split(/\r?\n/).length < 2) {
+          window.alert("No scores stored yet. Leave a question up until phones send a score, then download.");
+          return;
+        }
+        const blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+        const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `copd-cpd-results-${stamp}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        window.alert("Could not download results.");
+      }
+    }
+
     async function copyJoinLink() {
       if (!hub.join) return;
       try {
@@ -2412,6 +2448,10 @@
     const copyJoinBtn = document.getElementById("copyJoinBtn");
     if (copyJoin) copyJoin.onclick = copyJoinLink;
     if (copyJoinBtn) copyJoinBtn.onclick = copyJoinLink;
+    const csvBtn = document.getElementById("csvBtn");
+    const csvBtnBar = document.getElementById("csvBtnBar");
+    if (csvBtn) csvBtn.onclick = downloadResults;
+    if (csvBtnBar) csvBtnBar.onclick = downloadResults;
     const joinOverride = document.getElementById("joinOverride");
     if (joinOverride) {
       const savedJoin = sessionStorage.getItem("copd-public-join") || "";

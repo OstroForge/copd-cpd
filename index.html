@@ -878,22 +878,57 @@
         title: "COPD, Type 2 Respiratory Failure and NEWS2",
         subtitle: "Pre-hospital assessment and treatment of acute exacerbations, with a hard look at NEWS2 Scale 2.",
         meta: "JRCALC G0390 v20.40 (updated 6 September 2023), JRCALC oxygen and medicines, and RCP NEWS2. Always follow the live JRCALC entry and local Trust policy.",
-        notes: "Open with the title statement. Do not bury the learning point. Next slide is the live hands-up. Leave it up while phones scan the QR."
+        notes: "Open with the title statement. Do not bury the learning point. Next slide is the live NEWS2 case. Leave it up while phones scan the QR."
       },
       {
         type: "poll",
-        pollId: "hands",
-        kicker: "Hands up",
-        title: "Before we start — phones out",
-        prompt: "Do you currently put every COPD patient on NEWS2 Scale 2?",
-        options: [
-          "Yes — that is my default",
-          "Only if they look like type 2 failure",
-          "No — Scale 1 unless type 2 is already documented"
-        ],
-        correct: null,
-        teach: "If you said yes, you are not alone. COPD does not choose Scale 2. A previous hospital or specialist record of type 2 failure does. That is the gap this session closes.",
-        notes: "Leave this slide up while people scan the QR. On Teams, copy the join link into chat so remote staff vote on their phone while watching the Audience window. Space locks the vote and shows the teaching line."
+        pollId: "q-case",
+        layout: "news2",
+        kind: "news2",
+        expectedScale: 1,
+        expectedTotal: 6,
+        kicker: "Your turn  ·  live NEWS2",
+        title: "75, known COPD — score this patient",
+        prompt: "Score every NEWS2 category on your phone. Use Scale 1 or Scale 2 for SpO<sub>2</sub>. We want how many people get the correct total on Scale 1.",
+        votePrompt: "Score this patient on NEWS2. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap every category.",
+        options: [],
+        obs: {
+          hx: "75, known COPD. Not on home oxygen. Increased SOB and secretions. Talking in short sentences. No alert card. No documented type 2 failure.",
+          rr: "22 /min",
+          spo2: "90% on air",
+          o2: "Air",
+          sbp: "138 mmHg",
+          pulse: "98 /min",
+          con: "Alert",
+          temp: "36.7 °C"
+        },
+        detail: `
+          <div class="poll-detail">
+            <div class="poll-facts">
+              <h3>On scene</h3>
+              <ul>
+                <li>75 years old, known COPD</li>
+                <li>Not on home oxygen</li>
+                <li>Increased shortness of breath and secretions</li>
+                <li>No pyrexia</li>
+                <li>Talking in short sentences</li>
+                <li>No alert card, no documented type 2 failure</li>
+              </ul>
+              <h3 style="margin-top:8px">Observations to score</h3>
+              <ul>
+                <li>RR <strong>22</strong></li>
+                <li>SpO<sub>2</sub> <strong>90% on air</strong></li>
+                <li>SBP <strong>138</strong></li>
+                <li>Pulse <strong>98</strong></li>
+                <li>Consciousness <strong>Alert</strong></li>
+                <li>Temp <strong>36.7 °C</strong></li>
+              </ul>
+              <p class="small" style="margin-top:8px">Teaching bands, not the official RCP NEWS2 chart. Phones tap the chart. The number that matters is how many get NEWS 6 on Scale 1.</p>
+            </div>
+            <div class="n2-chart-slot"></div>
+          </div>`,
+        teach: "<strong>NEWS 6 on Scale 1.</strong> COPD, extra secretions and 90% on air do not document type 2 failure, so Scale 2 is not available. RR 22 scores 2, SpO<sub>2</sub> 90% scores 3, air 0, SBP 138 scores 0, pulse 98 scores 1, Alert 0, temp 36.7 scores 0. Total <strong>6</strong>. Scale 2 would score 90% as 0 and give NEWS <strong>3</strong>, hiding the hypoxia. Still target 88–92%. Handover the scale you used.",
+        notes: "This is the live question. Leave it up while phones scan the QR or use the Teams join link. Watch Scale 1 vs Scale 2. The figure you care about is how many got NEWS 6 on Scale 1. Typical error: Scale 2 because they have COPD, so 90% scores 0. Space reveals."
       },
       {
         kicker: "Purpose",
@@ -1442,56 +1477,6 @@
             </div>
           </div>`,
         notes: "Receiving staff should not have to guess the scale. ‘NEWS 3 on Scale 1, targeting 88–92, 90% on 28% Venturi, no documented type 2’ is a high-quality sentence."
-      },
-      {
-        type: "poll",
-        pollId: "q-case",
-        layout: "news2",
-        kind: "news2",
-        expectedScale: 1,
-        expectedTotal: 6,
-        kicker: "Your turn  ·  live NEWS2",
-        title: "75, known COPD — score this patient",
-        prompt: "Score every NEWS2 category on your phone. Use Scale 1 or Scale 2 for SpO<sub>2</sub>. We want how many people get the correct total on Scale 1.",
-        votePrompt: "Score this patient on NEWS2. Pick Scale 1 or Scale 2 for SpO<sub>2</sub>, then tap every category.",
-        options: [],
-        obs: {
-          hx: "75, known COPD. Not on home oxygen. Increased SOB and secretions. Talking in short sentences. No alert card. No documented type 2 failure.",
-          rr: "22 /min",
-          spo2: "90% on air",
-          o2: "Air",
-          sbp: "138 mmHg",
-          pulse: "98 /min",
-          con: "Alert",
-          temp: "36.7 °C"
-        },
-        detail: `
-          <div class="poll-detail">
-            <div class="poll-facts">
-              <h3>On scene</h3>
-              <ul>
-                <li>75 years old, known COPD</li>
-                <li>Not on home oxygen</li>
-                <li>Increased shortness of breath and secretions</li>
-                <li>No pyrexia</li>
-                <li>Talking in short sentences</li>
-                <li>No alert card, no documented type 2 failure</li>
-              </ul>
-              <h3 style="margin-top:8px">Observations to score</h3>
-              <ul>
-                <li>RR <strong>22</strong></li>
-                <li>SpO<sub>2</sub> <strong>90% on air</strong></li>
-                <li>SBP <strong>138</strong></li>
-                <li>Pulse <strong>98</strong></li>
-                <li>Consciousness <strong>Alert</strong></li>
-                <li>Temp <strong>36.7 °C</strong></li>
-              </ul>
-              <p class="small" style="margin-top:8px">Teaching bands, not the official RCP NEWS2 chart. Phones tap the chart. The number that matters is how many get NEWS 6 on Scale 1.</p>
-            </div>
-            <div class="n2-chart-slot"></div>
-          </div>`,
-        teach: "<strong>NEWS 6 on Scale 1.</strong> COPD, extra secretions and 90% on air do not document type 2 failure, so Scale 2 is not available. RR 22 scores 2, SpO<sub>2</sub> 90% scores 3, air 0, SBP 138 scores 0, pulse 98 scores 1, Alert 0, temp 36.7 scores 0. Total <strong>6</strong>. Scale 2 would score 90% as 0 and give NEWS <strong>3</strong>, hiding the hypoxia. Still target 88–92%. Handover the scale you used.",
-        notes: "Leave this up while phones score. Watch Scale 1 vs Scale 2. The figure you care about is how many got NEWS 6 on Scale 1. Typical error: Scale 2 because they have COPD, so 90% scores 0. Space reveals. Then Case 2 is the documented retainer."
       },
       {
         kicker: "Case 2",

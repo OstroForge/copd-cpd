@@ -128,8 +128,10 @@ def public_poll() -> dict:
             ):
                 correct += 1
             total = vote.get("total")
-            if isinstance(total, int):
-                spread_counts[total] = spread_counts.get(total, 0) + 1
+            scale = vote.get("scale")
+            if isinstance(total, int) and scale in (1, 2):
+                key = (total, scale)
+                spread_counts[key] = spread_counts.get(key, 0) + 1
         revealed = POLL["revealed"]
         out = {
             "live": True,
@@ -146,7 +148,10 @@ def public_poll() -> dict:
             "scale2": scale2,
             "correctScale1": correct,
             "correctCount": correct,
-            "spread": [{"total": k, "n": spread_counts[k]} for k in sorted(spread_counts)],
+            "spread": [
+                {"total": total, "scale": scale, "n": n}
+                for (total, scale), n in sorted(spread_counts.items())
+            ],
             "expectedTotal": POLL.get("expectedTotal"),
             "expectedScale": POLL.get("expectedScale"),
             "correct": None,

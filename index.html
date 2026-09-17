@@ -714,18 +714,54 @@
     .n2-spread { display: flex; flex-direction: column; gap: 6px; }
     .n2-spread-row {
       display: grid;
-      grid-template-columns: 88px 1fr auto;
+      grid-template-columns: 128px 1fr auto;
       gap: 8px;
       align-items: center;
       font-size: 15px;
       font-weight: 650;
       color: var(--navy);
     }
+    .n2-spread-row span em {
+      display: block;
+      font-style: normal;
+      font-size: 11px;
+      font-weight: 650;
+      color: var(--muted);
+    }
     .n2-spread-row i {
       display: block;
       height: 14px;
       background: var(--navy-2);
     }
+    .n2-spread-row.s1 i { background: var(--teal); }
+    .n2-spread-row.s2 i { background: var(--amber); }
+    .n2-spread-row.is-correct {
+      background: var(--green-bg);
+      outline: 1px solid #b7e0c8;
+      padding: 4px 6px;
+    }
+    .pv-live {
+      display: none;
+      background: #102820;
+      color: #e8f3ed;
+      border: 1px solid #2f5c4c;
+      padding: 10px 12px;
+      max-height: 42%;
+      overflow: auto;
+    }
+    body.presenter .pv-live:not([hidden]) { display: block; }
+    .pv-live[hidden] { display: none !important; }
+    .pv-live .pv-kicker { color: #f0c36a; margin-bottom: 6px; }
+    .pv-live-counts {
+      font-size: 13px;
+      color: #c5dcd0;
+      margin-bottom: 8px;
+    }
+    .pv-live-counts b { color: #fff; }
+    .pv-live .n2-spread-row { color: #e8f3ed; font-size: 13px; grid-template-columns: 110px 1fr auto; }
+    .pv-live .n2-spread-row span em { color: #a8c4b6; }
+    .pv-live .n2-spread-row.is-correct { background: #1a4a38; outline-color: #2e7d4f; }
+    .pv-live .small { color: #a8c4b6; }
     .n2-scale-pick { display: flex; gap: 8px; margin: 8px 0; }
     .n2-scale-pick button {
       flex: 1;
@@ -869,6 +905,11 @@
   <div class="pv-side" id="pvSide">
     <div class="pv-kicker">Next slide</div>
     <p class="pv-next-title" id="nextTitle"></p>
+    <div class="pv-live" id="pvLive" hidden>
+      <div class="pv-kicker">Live scores</div>
+      <p class="pv-live-counts" id="pvLiveCounts"></p>
+      <div class="n2-spread" id="pvLiveSpread"></div>
+    </div>
     <aside class="notes" id="notes"></aside>
     <div class="pv-join-box">
       <div class="pv-kicker">Room + Teams join</div>
@@ -1867,7 +1908,7 @@
             <div class="n2-stat"><span class="n2-s2">0</span><label>used Scale 2</label></div>
             <div class="n2-stat n2-stat-ok"><span class="n2-ok">0</span><label class="n2-ok-lab">correct NEWS</label></div>
           </div>
-          <h3 class="n2-spread-title">Spread of NEWS totals</h3>
+          <h3 class="n2-spread-title">Spread of NEWS totals by scale</h3>
           <div class="n2-spread"></div>` : `
           <p class="poll-phones"><span class="poll-total">0</span> responses</p>
           <div class="poll-opts">${opts}</div>`;
@@ -2082,11 +2123,59 @@
       return live || cached || null;
     }
 
+    function paintSpread(box, spread, expected, emptyMsg) {
+      if (!box) return;
+      spread = spread || [];
+      if (!spread.length) {
+        box.innerHTML = `<p class="small">${emptyMsg || "Waiting for scores…"}</p>`;
+        return;
+      }
+      const max = spread.reduce((m, x) => Math.max(m, x.n), 0) || 1;
+      box.innerHTML = spread.map((x) => {
+        const scale = x.scale || "";
+        const ok = expected && scale === expected.scale && x.total === expected.total;
+        return `<div class="n2-spread-row${ok ? " is-correct" : ""}${scale ? ` s${scale}` : ""}">
+          <span>NEWS ${x.total}${scale ? `<em>Scale ${scale}</em>` : ""}</span>
+          <i style="width:${Math.round((x.n / max) * 100)}%"></i>
+          <b>${x.n}</b>
+        </div>`;
+      }).join("");
+    }
+
+    function paintPresenterLive(s, poll) {
+      const live = document.getElementById("pvLive");
+      const counts = document.getElementById("pvLiveCounts");
+      const spreadBox = document.getElementById("pvLiveSpread");
+      if (!live || !counts || !spreadBox) return;
+      const show = view === "presenter" && s && (s.type === "poll" || s.type === "poll-results");
+      live.hidden = !show;
+      if (!show) return;
+      const q = s.type === "poll-results"
+        ? (slides.find((x) => x.type === "poll" && x.pollId === s.pollId) || s)
+        : s;
+      const total = poll ? poll.total : 0;
+      if (q.layout === "news2" || poll && poll.kind === "news2") {
+        counts.innerHTML = `<b>${total}</b> in · <b>${poll ? (poll.scale1 || 0) : 0}</b> Scale 1 · <b>${poll ? (poll.scale2 || 0) : 0}</b> Scale 2`;
+        paintSpread(spreadBox, poll && poll.spread, {
+          scale: (poll && poll.expectedScale) || q.expectedScale,
+          total: (poll && poll.expectedTotal) || q.expectedTotal
+        });
+        return;
+      }
+      const bits = (q.options || []).map((label, n) => {
+        const c = poll && poll.counts ? (poll.counts[n] || 0) : 0;
+        return `<b>${c}</b> ${label}`;
+      });
+      counts.innerHTML = `<b>${total}</b> in` + (bits.length ? " · " + bits.join(" · ") : "");
+      spreadBox.innerHTML = "";
+    }
+
     function paintPoll() {
       const s = slides[i];
       const el = stage.querySelectorAll(".slide")[i];
+      const poll = s && (s.type === "poll" || s.type === "poll-results") ? pollFor(s.pollId) : null;
+      paintPresenterLive(s, poll);
       if (!s || !el || (s.type !== "poll" && s.type !== "poll-results")) return;
-      const poll = pollFor(s.pollId);
       const total = poll ? poll.total : 0;
       el.querySelectorAll(".poll-total").forEach((n) => { n.textContent = String(total); });
       if (s.type === "poll") return;
@@ -2102,19 +2191,10 @@
         const okLab = el.querySelector(".n2-ok-lab");
         const scale = (poll && poll.expectedScale) || q.expectedScale;
         if (okLab && scale) okLab.textContent = `correct NEWS on Scale ${scale}`;
-        const box = el.querySelector(".n2-spread");
-        if (box) {
-          const spread = (poll && poll.spread) || [];
-          const max = spread.reduce((m, x) => Math.max(m, x.n), 0) || 1;
-          box.innerHTML = spread.length
-            ? spread.map((x) => `
-              <div class="n2-spread-row">
-                <span>NEWS ${x.total}</span>
-                <i style="width:${Math.round((x.n / max) * 100)}%"></i>
-                <b>${x.n}</b>
-              </div>`).join("")
-            : "<p class=\"small\">No scores received for this patient yet.</p>";
-        }
+        paintSpread(el.querySelector(".n2-spread"), poll && poll.spread, {
+          scale: scale,
+          total: (poll && poll.expectedTotal) || q.expectedTotal
+        }, "No scores received for this patient yet.");
         const teach = el.querySelector(".poll-teach");
         if (teach) teach.innerHTML = (poll && (poll.revealed || poll.total) && q.teach) ? q.teach : "";
         return;
@@ -2255,6 +2335,7 @@
       }
       applyView();
       notesEl.classList.add("visible");
+      paintPoll();
       openAudienceWindow();
     }
 

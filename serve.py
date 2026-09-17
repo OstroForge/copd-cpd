@@ -142,21 +142,16 @@ def public_poll() -> dict:
             "revealed": revealed,
             "total": len(POLL["votes"]),
             "counts": [],
-            "scale1": scale1 if revealed else 0,
-            "scale2": scale2 if revealed else 0,
-            "correctScale1": correct if revealed else 0,
-            "correctCount": correct if revealed else 0,
-            "spread": (
-                [{"total": k, "n": spread_counts[k]} for k in sorted(spread_counts)]
-                if revealed
-                else []
-            ),
+            "scale1": scale1,
+            "scale2": scale2,
+            "correctScale1": correct,
+            "correctCount": correct,
+            "spread": [{"total": k, "n": spread_counts[k]} for k in sorted(spread_counts)],
+            "expectedTotal": POLL.get("expectedTotal"),
+            "expectedScale": POLL.get("expectedScale"),
             "correct": None,
             "teach": POLL["teach"] if revealed else "",
         }
-        if revealed:
-            out["expectedTotal"] = POLL.get("expectedTotal")
-            out["expectedScale"] = POLL.get("expectedScale")
         return out
     options = POLL["options"]
     counts = [0] * len(options)
@@ -172,7 +167,7 @@ def public_poll() -> dict:
         "options": options,
         "open": POLL["open"],
         "revealed": revealed,
-        "counts": counts if revealed else [0] * len(options),
+        "counts": counts,
         "total": sum(counts),
         "correct": POLL["correct"] if revealed else None,
         "teach": POLL["teach"] if revealed else "",
@@ -350,12 +345,20 @@ class Handler(SimpleHTTPRequestHandler):
                 if action == "start":
                     options = data.get("options") if isinstance(data.get("options"), list) else []
                     options = [str(x) for x in options][:8]
-                    new_id = str(data.get("id") or "")[:40]
+                    new_id = str(data.get("id") or "")[:40] or "poll"
                     kind = str(data.get("kind") or "choice")
                     kind = kind if kind in ("choice", "news2") else "choice"
-                    if new_id != POLL["id"] or not POLL["open"] or POLL.get("kind") != kind:
+                    if (
+                        POLL["revealed"]
+                        and new_id == POLL["id"]
+                        and POLL.get("kind") == kind
+                        and POLL["votes"]
+                    ):
+                        send_json(self, {"ok": True, "poll": public_poll()})
+                        return
+                    if new_id != POLL["id"] or POLL.get("kind") != kind:
                         POLL["votes"] = {}
-                    POLL["id"] = new_id or "poll"
+                    POLL["id"] = new_id
                     POLL["kind"] = kind
                     POLL["prompt"] = str(data.get("prompt") or "")[:400]
                     POLL["options"] = options if kind == "choice" else []

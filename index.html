@@ -705,6 +705,7 @@
     .poll-slide:not(.poll-results) .poll-n,
     .poll-slide:not(.poll-results) .poll-bar { visibility: hidden; }
     .poll-results .poll-teach { display: block; }
+    .poll-results .poll-teach:empty { display: none; }
     .n2-spread-title {
       font-size: 15px;
       color: var(--navy);
@@ -1775,6 +1776,7 @@
       poll: null
     };
     let lastHostId = null;
+    const pollCache = {};
     try {
       const raw = localStorage.getItem(STORE);
       if (raw) {
@@ -1875,7 +1877,7 @@
           <div class="body">
             <p class="poll-prompt">${q.prompt || ""}</p>
             ${spread}
-            <div class="poll-teach">${q.teach || ""}</div>
+            <div class="poll-teach"></div>
           </div>
           <div class="footer-bar"><span>Ambulance CPD · JRCALC G0390 v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
@@ -2065,11 +2067,26 @@
       });
     }
 
+    function rememberPoll(poll) {
+      if (!poll || !poll.id) return;
+      const prev = pollCache[poll.id];
+      if (prev && (prev.total || 0) > (poll.total || 0)) return;
+      pollCache[poll.id] = poll;
+    }
+
+    function pollFor(id) {
+      const live = hub.poll && hub.poll.id === id ? hub.poll : null;
+      if (live) rememberPoll(live);
+      const cached = pollCache[id];
+      if (live && cached && (cached.total || 0) > (live.total || 0)) return cached;
+      return live || cached || null;
+    }
+
     function paintPoll() {
       const s = slides[i];
       const el = stage.querySelectorAll(".slide")[i];
       if (!s || !el || (s.type !== "poll" && s.type !== "poll-results")) return;
-      const poll = hub.poll && hub.poll.id === s.pollId ? hub.poll : null;
+      const poll = pollFor(s.pollId);
       const total = poll ? poll.total : 0;
       el.querySelectorAll(".poll-total").forEach((n) => { n.textContent = String(total); });
       if (s.type === "poll") return;
@@ -2083,9 +2100,8 @@
         set(".n2-s2", poll ? (poll.scale2 || 0) : 0);
         set(".n2-ok", poll ? (poll.correctCount || poll.correctScale1 || 0) : 0);
         const okLab = el.querySelector(".n2-ok-lab");
-        if (okLab && poll && poll.expectedScale) {
-          okLab.textContent = `correct NEWS on Scale ${poll.expectedScale}`;
-        }
+        const scale = (poll && poll.expectedScale) || q.expectedScale;
+        if (okLab && scale) okLab.textContent = `correct NEWS on Scale ${scale}`;
         const box = el.querySelector(".n2-spread");
         if (box) {
           const spread = (poll && poll.spread) || [];
@@ -2097,12 +2113,10 @@
                 <i style="width:${Math.round((x.n / max) * 100)}%"></i>
                 <b>${x.n}</b>
               </div>`).join("")
-            : "<p class=\"small\">Waiting for scores…</p>";
+            : "<p class=\"small\">No scores received for this patient yet.</p>";
         }
-        if (poll && poll.teach) {
-          const teach = el.querySelector(".poll-teach");
-          if (teach) teach.innerHTML = poll.teach;
-        }
+        const teach = el.querySelector(".poll-teach");
+        if (teach) teach.innerHTML = (poll && (poll.revealed || poll.total) && q.teach) ? q.teach : "";
         return;
       }
       el.querySelectorAll(".poll-opt").forEach((opt, n) => {
@@ -2111,21 +2125,18 @@
         const barFill = opt.querySelector(".poll-bar i");
         if (num) num.textContent = String(c);
         if (barFill) barFill.style.width = total ? `${Math.round((c / total) * 100)}%` : "0%";
-        opt.classList.toggle("is-correct", !!(poll && poll.revealed && poll.correct === n));
+        opt.classList.toggle("is-correct", !!(typeof q.correct === "number" && q.correct === n && (poll && (poll.revealed || poll.total))));
       });
-      if (poll && poll.teach) {
-        const teach = el.querySelector(".poll-teach");
-        if (teach) teach.innerHTML = poll.teach;
-      }
+      const teach = el.querySelector(".poll-teach");
+      if (teach) teach.innerHTML = (poll && (poll.revealed || poll.total) && q.teach) ? q.teach : "";
     }
 
     async function hostAction(action, extra) {
       if (view === "audience" || view === "vote") return null;
-      if (!hub.token && view !== "presenter") return null;
       try {
         const headers = { "Content-Type": "application/json" };
         if (hub.token) headers["X-Host-Token"] = hub.token;
-        if (view === "presenter") headers["X-Presenter-Role"] = "1";
+        if (view !== "audience" && view !== "vote") headers["X-Presenter-Role"] = "1";
         const res = await fetch("/api/host", {
           method: "POST",
           headers,
@@ -2134,7 +2145,9 @@
         if (!res.ok) return null;
         const data = await res.json();
         if (data && data.poll) {
-          hub.poll = data.poll;
+          rememberPoll(data.poll);
+          const cached = pollCache[data.poll.id];
+          hub.poll = cached && (cached.total || 0) > (data.poll.total || 0) ? cached : data.poll;
           paintPoll();
         }
         return data;
@@ -2145,10 +2158,10 @@
 
     async function hostFollowSlide() {
       if (!hub.ok || view === "audience" || view === "vote") return;
-      if (!hub.token && view !== "presenter") return;
-      const s = slides[i];
+      const idx = i;
+      const s = slides[idx];
       if (s && s.type === "poll") {
-        if (lastHostId === s.pollId && hub.poll && hub.poll.id === s.pollId && hub.poll.open) return;
+        if (lastHostId === s.pollId) return;
         lastHostId = s.pollId;
         const payload = {
           id: s.pollId,
@@ -2185,7 +2198,17 @@
           return;
         }
         hub.poll = await res.json();
+        rememberPoll(hub.poll);
         if (!hub.ok) setHubLive(true);
+        const s = slides[i];
+        if (
+          s && s.type === "poll-results"
+          && view !== "audience" && view !== "vote"
+          && hub.poll && hub.poll.id === s.pollId && hub.poll.open
+        ) {
+          await hostAction("reveal");
+          return;
+        }
         paintPoll();
       } catch (err) {
         setHubLive(false);

@@ -17,42 +17,51 @@ or a public URL (cloudflared / Render) and set PUBLIC_URL to that origin.
 """
 from __future__ import annotations
 
+import base64
 import csv
 import io
 import json
 import os
+import re
 import secrets
 import socket
 import sys
 import threading
+import time
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
 from functools import partial
+from http.cookiejar import CookieJar
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, quote, urlparse
 
 from qrcodegen import QrCode
 
 ROOT = Path(__file__).resolve().parent
 PORT = 8765
 HOST_TOKEN = os.environ.get("HOST_TOKEN") or secrets.token_urlsafe(8)
+PIN_FILE = ROOT / "presenter-pin.txt"
+PRESENTERS_FILE = ROOT / "presenters.txt"
 PUBLIC_URL = (os.environ.get("PUBLIC_URL") or "").rstrip("/")
 LOCK = threading.Lock()
+ROOM_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+ROOMS: dict[str, "Room"] = {}
+CERT_FILE = ROOT / "certificates.csv"
+CERT_WEBHOOK = (os.environ.get("CERT_WEBHOOK") or "").strip()
+ATTEND_CONFIG = ROOT / "attend-folder.txt"
+OD_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+)
+_OD: dict = {}
 
-POLL = {
-    "id": None,
-    "kind": "choice",
-    "prompt": "",
-    "options": [],
-    "obs": {},
-    "correct": None,
-    "expectedTotal": None,
-    "expectedScale": None,
-    "teach": "",
-    "open": False,
-    "revealed": False,
-    "votes": {},
-}
-HISTORY = {}
+
+def _usable_lan_ip(ip: str) -> bool:
+    if not ip or ip.startswith("127.") or ip.startswith("169.254."):
+        return False
+    return True
 
 
 def lan_ips() -> list[str]:
@@ -62,14 +71,14 @@ def lan_ips() -> list[str]:
         sock.connect(("8.8.8.8", 80))
         ip = sock.getsockname()[0]
         sock.close()
-        if ip and not ip.startswith("127."):
+        if _usable_lan_ip(ip):
             found.append(ip)
     except OSError:
         pass
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
             ip = info[4][0]
-            if ip and not ip.startswith("127.") and ip not in found:
+            if _usable_lan_ip(ip) and ip not in found:
                 found.append(ip)
     except OSError:
         pass
@@ -100,8 +109,11 @@ def request_base(handler: SimpleHTTPRequestHandler) -> str:
     return f"{proto}://{host}"
 
 
-def join_url(handler: SimpleHTTPRequestHandler) -> str:
-    return request_base(handler) + "/v"
+def join_url(handler: SimpleHTTPRequestHandler, room_id: str = "") -> str:
+    url = request_base(handler) + "/v"
+    if room_id:
+        url += "?r=" + room_id
+    return url
 
 
 def requested_join(handler: SimpleHTTPRequestHandler) -> str:
@@ -114,11 +126,651 @@ def requested_join(handler: SimpleHTTPRequestHandler) -> str:
     return raw
 
 
-def public_poll() -> dict:
-    if POLL.get("kind") == "news2":
+def utc_now() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def clean_name(raw: object) -> str:
+    text = " ".join(str(raw or "").split())
+    return text[:80]
+
+
+def clean_esr(raw: object) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(raw or "").upper())[:16]
+
+
+def clean_email(raw: object) -> str:
+    text = " ".join(str(raw or "").split()).lower()[:120]
+    if not re.fullmatch(r"[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}", text):
+        return ""
+    return text
+
+
+def pin_key(raw: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", (raw or "").upper())
+
+
+def load_presenters() -> dict[str, str]:
+    found: dict[str, str] = {}
+
+    def add(pin: str, name: str) -> None:
+        key = pin_key(pin)
+        who = clean_name(name)
+        if len(key) >= 4 and key not in found:
+            found[key] = who
+
+    env_list = (os.environ.get("PRESENTERS") or "").strip().strip('"')
+    if env_list:
+        for part in env_list.split(";"):
+            part = part.strip()
+            if not part:
+                continue
+            if ":" in part:
+                pin, name = part.split(":", 1)
+                add(pin, name)
+            else:
+                add(part, "")
+    env_pin = (os.environ.get("PRESENTER_PIN") or "").strip().strip('"')
+    if env_pin:
+        add(env_pin, os.environ.get("PRESENTER_NAME") or "")
+    for path in (PIN_FILE, PRESENTERS_FILE):
+        if not path.exists():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            raw = line.strip().strip('"')
+            if not raw or raw.startswith("#"):
+                continue
+            bits = raw.replace("\t", " ").split(None, 1)
+            add(bits[0], bits[1] if len(bits) > 1 else "")
+    if found:
+        return found
+    pin = "".join(secrets.choice(ROOM_ALPHABET) for _ in range(6))
+    add(pin, "")
+    try:
+        PRESENTERS_FILE.write_text(
+            "# PIN  Full name as it should appear on the attendance file\n"
+            "# One person per line. Do not commit this file.\n"
+            "# On Render set PRESENTERS=PIN:Full Name;PIN:Full Name\n"
+            + pin
+            + "  Course lead\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+    return found
+
+
+PRESENTERS = load_presenters()
+
+
+def request_host_secret(handler: SimpleHTTPRequestHandler) -> str:
+    parsed = urlparse(handler.path)
+    query = (parse_qs(parsed.query).get("host") or [""])[0]
+    return (handler.headers.get("X-Host-Token") or query or "").strip()
+
+
+def presenter_for_token(token: str) -> str:
+    return PRESENTERS.get(pin_key(token), "")
+
+
+def secret_is_host(token: str) -> bool:
+    if not token:
+        return False
+    if token == HOST_TOKEN:
+        return True
+    return pin_key(token) in PRESENTERS
+
+
+def blank_poll() -> dict:
+    return {
+        "id": None,
+        "kind": "choice",
+        "prompt": "",
+        "options": [],
+        "obs": {},
+        "correct": None,
+        "expectedTotal": None,
+        "expectedScale": None,
+        "teach": "",
+        "open": False,
+        "revealed": False,
+        "votes": {},
+    }
+
+
+class Room:
+    def __init__(self, rid: str) -> None:
+        self.id = rid
+        self.poll = blank_poll()
+        self.history: dict = {}
+        self.names: dict = {}
+        self.register_open = False
+        self.session_file: Path | None = None
+        self.session_name = ""
+        self.session_cloud = False
+        self.session_url = ""
+        self.touched = time.monotonic()
+
+    def cert_path(self) -> Path:
+        return ROOT / ("certificates-{}.csv".format(self.id.lower()))
+
+
+def new_room_id() -> str:
+    for _ in range(20):
+        rid = "".join(secrets.choice(ROOM_ALPHABET) for _ in range(6))
+        if rid not in ROOMS:
+            return rid
+    return secrets.token_urlsafe(6).upper()[:8]
+
+
+def request_room_id(handler: SimpleHTTPRequestHandler) -> str:
+    parsed = urlparse(handler.path)
+    rid = (parse_qs(parsed.query).get("r") or [""])[0].strip().upper()
+    if not rid:
+        rid = (handler.headers.get("X-Room") or "").strip().upper()
+    return re.sub(r"[^A-Z0-9]", "", rid)[:8]
+
+
+def get_room(rid: str, create: bool = False) -> Room | None:
+    if rid and rid in ROOMS:
+        room = ROOMS[rid]
+        room.touched = time.monotonic()
+        return room
+    if not create:
+        return None
+    if rid and re.fullmatch(r"[A-Z0-9]{4,8}", rid):
+        room = Room(rid)
+        ROOMS[rid] = room
+        return room
+    fresh = new_room_id()
+    room = Room(fresh)
+    ROOMS[fresh] = room
+    return room
+
+
+def load_names() -> None:
+    return
+
+
+def extra_cert_paths() -> list[Path]:
+    paths = [ROOT / "COPD-CPD-certificate-names.csv"]
+    home = Path.home()
+    for folder in (home / "Documents", home / "OneDrive"):
+        if folder.exists():
+            paths.append(folder / "COPD-CPD-certificate-names.csv")
+    unique = []
+    seen = set()
+    for path in paths:
+        key = str(path.resolve()) if path.parent.exists() else str(path)
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
+
+
+def attend_config() -> tuple[str, Path | None]:
+    share = (os.environ.get("ATTEND_SHARE_URL") or "").strip().strip('"')
+    folder_raw = (os.environ.get("ATTEND_FOLDER") or "").strip().strip('"')
+    if ATTEND_CONFIG.exists():
+        try:
+            lines = ATTEND_CONFIG.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            lines = []
+        for line in lines:
+            raw = line.strip().strip('"')
+            if not raw or raw.startswith("#"):
+                continue
+            lower = raw.lower()
+            if lower.startswith("http://") or lower.startswith("https://"):
+                if not share:
+                    share = raw
+            elif not folder_raw:
+                folder_raw = raw
+    if share:
+        return share, None
+    if not folder_raw:
+        folder_raw = str(Path.home() / "OneDrive" / "Documents" / "Hub CPD attendance")
+    path = Path(folder_raw) if folder_raw else None
+    if path is not None and (os.name != "nt" or "onedrive" not in str(path).lower()):
+        path = None
+    return share, path
+
+
+def attend_dir() -> Path | None:
+    return attend_config()[1]
+
+
+def session_filename(presenter: str = "", room_id: str = "") -> str:
+    stamp = datetime.now().strftime("%Y-%m-%d-%H%M")
+    person = filename_person(presenter)
+    code = re.sub(r"[^A-Z0-9]", "", (room_id or "").upper())[:8]
+    if code:
+        return "COPD-CPD-attendance-{}-{}-{}.csv".format(stamp, person, code)
+    return "COPD-CPD-attendance-{}-{}.csv".format(stamp, person)
+
+
+def filename_person(raw: str) -> str:
+    text = clean_name(raw)
+    text = re.sub(r"[^\w\s-]", "", text, flags=re.UNICODE)
+    text = re.sub(r"[-\s]+", "-", text).strip("-")
+    return (text[:40] or "facilitator")
+
+
+def encode_share_url(url: str) -> str:
+    b64 = base64.b64encode(url.encode("utf-8")).decode("ascii").rstrip("=")
+    return "u!" + b64.replace("+", "-").replace("/", "_")
+
+
+def od_folder_rel(root: dict) -> str:
+    parent = str((root.get("parentReference") or {}).get("path") or "")
+    name = str(root.get("name") or "certificates")
+    rel = ""
+    if "/root:" in parent:
+        rel = parent.split("/root:", 1)[1].strip("/")
+    parts = ["Documents"]
+    if rel:
+        parts.append(rel)
+    parts.append(name)
+    return "/".join(parts)
+
+
+def od_folder_guid(root: dict) -> str:
+    etag = str(root.get("eTag") or "")
+    match = re.search(r"\{([0-9A-Fa-f-]{36})\}", etag)
+    if match:
+        return match.group(1)
+    item_id = str(root.get("id") or "")
+    if "!s" in item_id:
+        hexid = item_id.split("!s", 1)[1]
+        if len(hexid) == 32:
+            return "{}-{}-{}-{}-{}".format(
+                hexid[0:8], hexid[8:12], hexid[12:16], hexid[16:20], hexid[20:32]
+            )
+    return ""
+
+
+def od_http(method: str, endpoint: str, data: bytes | None = None, headers: dict | None = None) -> bytes:
+    hdr = {"User-Agent": OD_UA, "Accept": "application/json"}
+    if headers:
+        hdr.update(headers)
+    req = urllib.request.Request(endpoint, data=data, method=method, headers=hdr)
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return resp.read()
+
+
+def od_connect(share_url: str) -> dict:
+    jar = CookieJar()
+    opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+    opener.open(urllib.request.Request(share_url, headers={"User-Agent": OD_UA}), timeout=20)
+    fed = next((cookie.value for cookie in jar if cookie.name == "FedAuth"), "")
+    if not fed:
+        raise OSError("OneDrive did not grant access to the shared folder")
+    token = encode_share_url(share_url)
+    raw = od_http(
+        "GET",
+        "https://onedrive.live.com/_api/v2.0/shares/" + token + "/root",
+        headers={"Cookie": "FedAuth=" + fed},
+    )
+    root = json.loads(raw.decode("utf-8"))
+    ctx = str(root.get("@odata.context") or "")
+    site = ctx.split("/_api/")[0] if "/_api/" in ctx else ""
+    if not site:
+        raise OSError("Could not resolve the OneDrive folder")
+    digest_raw = od_http(
+        "POST",
+        site + "/_api/contextinfo",
+        data=b"",
+        headers={
+            "Accept": "application/json;odata=verbose",
+            "Content-Type": "application/json;odata=verbose",
+            "Cookie": "FedAuth=" + fed,
+        },
+    )
+    digest = json.loads(digest_raw.decode("utf-8"))["d"]["GetContextWebInformation"]["FormDigestValue"]
+    return {
+        "share": share_url,
+        "fed": fed,
+        "digest": digest,
+        "digest_at": time.monotonic(),
+        "site": site,
+        "folder_rel": od_folder_rel(root),
+        "folder_guid": od_folder_guid(root),
+    }
+
+
+def prepare_local_dir(folder: Path) -> None:
+    folder.mkdir(parents=True, exist_ok=True)
+    if os.name != "nt":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.kernel32.SetFileAttributesW(str(folder), 0x10)
+    except OSError:
+        pass
+
+
+def write_local_bytes(path: Path, body: bytes) -> Path | None:
+    prepare_local_dir(path.parent)
+    with path.open("wb") as handle:
+        handle.write(body)
+        handle.flush()
+        os.fsync(handle.fileno())
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            ctypes.windll.kernel32.SetFileAttributesW(str(path), 0x80)
+        except OSError:
+            pass
+    if path.is_file():
+        return path
+    return None
+
+
+def od_list_names(session: dict) -> set[str]:
+    folder = quote(session["folder_rel"], safe="/")
+    raw = od_http(
+        "GET",
+        session["site"] + "/_api/web/GetFolderByServerRelativeUrl(@p)/Files?@p='" + folder + "'&$select=Name",
+        headers={
+            "Accept": "application/json;odata=verbose",
+            "Cookie": "FedAuth=" + session["fed"],
+        },
+    )
+    rows = json.loads(raw.decode("utf-8")).get("d", {}).get("results") or []
+    return {str(row.get("Name") or "") for row in rows}
+
+
+def od_download(session: dict, filename: str) -> bytes:
+    rel = urlparse(session["site"]).path.rstrip("/") + "/" + session["folder_rel"] + "/" + filename
+    url = (
+        session["site"]
+        + "/_api/web/GetFileByServerRelativePath(decodedurl=@p)/$value?@p='"
+        + quote(rel, safe="/")
+        + "'"
+    )
+    return od_http("GET", url, headers={"Cookie": "FedAuth=" + session["fed"]})
+
+
+def od_put(session: dict, filename: str, content: bytes) -> None:
+    site = session["site"]
+    headers = {
+        "Accept": "application/json;odata=verbose",
+        "Content-Type": "application/octet-stream",
+        "Cookie": "FedAuth=" + session["fed"],
+        "X-RequestDigest": session["digest"],
+    }
+    folder = quote(session["folder_rel"], safe="/")
+    endpoints = [
+        (
+            site
+            + "/_api/web/GetFolderByServerRelativeUrl(@p)/Files/add(overwrite=true,url=@f)"
+            + "?@p='"
+            + folder
+            + "'&@f='"
+            + filename
+            + "'"
+        )
+    ]
+    guid = session.get("folder_guid") or ""
+    if guid:
+        endpoints.append(
+            site
+            + "/_api/web/GetFolderById(guid'"
+            + guid
+            + "')/Files/add(overwrite=true,url=@f)?@f='"
+            + filename
+            + "'"
+        )
+    last_error: OSError | None = None
+    for endpoint in endpoints:
+        try:
+            od_http("POST", endpoint, data=content, headers=headers)
+            return
+        except urllib.error.HTTPError as err:
+            last_error = OSError("OneDrive upload failed ({})".format(err.code))
+            if err.code == 401:
+                raise last_error
+    if last_error:
+        raise last_error
+    raise OSError("OneDrive upload failed")
+
+
+def od_upload(filename: str, content: bytes) -> dict:
+    share, _folder = attend_config()
+    if not share:
+        raise OSError("No OneDrive folder link is configured")
+    global _OD
+    now = time.monotonic()
+    session = _OD
+    if (
+        session.get("share") != share
+        or now - float(session.get("digest_at") or 0) > 1500
+        or not session.get("fed")
+        or not session.get("digest")
+    ):
+        session = od_connect(share)
+        _OD = session
+    try:
+        od_put(session, filename, content)
+    except OSError:
+        session = od_connect(share)
+        _OD = session
+        od_put(session, filename, content)
+    if filename not in od_list_names(session):
+        session = od_connect(share)
+        _OD = session
+        od_put(session, filename, content)
+        if filename not in od_list_names(session):
+            raise OSError("OneDrive did not keep the attendance file")
+    return session
+
+
+def od_file_web_url(session: dict, filename: str) -> str:
+    share, _folder = attend_config()
+    token = encode_share_url(share) if share else ""
+    if token:
+        try:
+            raw = od_http(
+                "GET",
+                "https://onedrive.live.com/_api/v2.0/shares/" + token + "/root:/" + quote(filename),
+                headers={"Cookie": "FedAuth=" + session["fed"]},
+            )
+            item = json.loads(raw.decode("utf-8"))
+            web = str(item.get("webUrl") or "")
+            if web:
+                return web
+        except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError):
+            pass
+    rel = urlparse(session["site"]).path.rstrip("/") + "/" + session["folder_rel"] + "/" + filename
+    try:
+        raw = od_http(
+            "GET",
+            session["site"]
+            + "/_api/web/GetFileByServerRelativePath(decodedurl=@p)?@p='"
+            + quote(rel, safe="/")
+            + "'&$select=LinkingUrl,Name",
+            headers={
+                "Accept": "application/json;odata=verbose",
+                "Cookie": "FedAuth=" + session["fed"],
+            },
+        )
+        info = json.loads(raw.decode("utf-8")).get("d") or {}
+        web = str(info.get("LinkingUrl") or "")
+        if web:
+            return web
+    except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError):
+        pass
+    return share
+
+
+def session_status(room: Room) -> dict:
+    share, folder = attend_config()
+    name = room.session_name or (room.session_file.name if room.session_file else "")
+    local = room.session_file if room.session_file and room.session_file.is_file() else None
+    if share:
+        folder_label = "OneDrive certificates folder"
+        file_label = name
+    else:
+        folder_label = str(folder) if folder else ""
+        file_label = str(local) if local else name
+    return {
+        "ok": True,
+        "room": room.id,
+        "folder": folder_label,
+        "file": file_label,
+        "name": name,
+        "count": len(room.names),
+        "ready": bool(folder or share),
+        "exists": room.session_cloud or bool(local),
+        "cloud": room.session_cloud,
+        "url": room.session_url,
+    }
+
+
+def names_human_csv(room: Room) -> bytes:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=["submitted_at", "name", "esr", "email"])
+    writer.writeheader()
+    rows = sorted(room.names.values(), key=lambda row: (row.get("name") or "").casefold())
+    for row in rows:
+        writer.writerow({
+            "submitted_at": row.get("at") or "",
+            "name": row.get("name") or "",
+            "esr": row.get("esr") or "",
+            "email": row.get("email") or "",
+        })
+    return buf.getvalue().encode("utf-8-sig")
+
+
+def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str]:
+    lead = clean_name(presenter)
+    if len(lead) < 2:
+        return None, "Enter the name of the person delivering this session."
+    share, folder = attend_config()
+    if not share and folder is None:
+        return None, "No OneDrive folder is configured. Keep the folder share in attend-folder.txt, or set ATTEND_SHARE_URL."
+    with LOCK:
+        room.names.clear()
+        try:
+            room.cert_path().unlink(missing_ok=True)
+        except OSError:
+            pass
+        name = session_filename(lead, room.id)
+        room.session_name = name
+        room.session_cloud = False
+        room.session_file = None
+        room.session_url = ""
+        body = names_human_csv(room)
+    if share:
+        try:
+            od_session = od_upload(name, body)
+            web = od_file_web_url(od_session, name)
+            with LOCK:
+                room.session_cloud = True
+                room.session_url = web
+            print("Attendance file [{}]: {}".format(room.id, name), flush=True)
+            return name, ""
+        except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
+            print("OneDrive upload: {}".format(err), flush=True)
+            return None, "Could not create the file in the OneDrive folder you shared: {}".format(err)
+    try:
+        written = write_local_bytes(folder / name, body)
+    except OSError as err:
+        return None, "Could not write the attendance file: {}".format(err)
+    if written is None:
+        return None, "Could not create the attendance file."
+    with LOCK:
+        room.session_file = written
+    print("Attendance file [{}]: {}".format(room.id, written), flush=True)
+    return name, ""
+
+
+def write_human_csv(room: Room, path: Path) -> None:
+    if write_local_bytes(path, names_human_csv(room)) is None:
+        raise OSError("Could not write " + str(path))
+
+
+def save_names(room: Room) -> None:
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=["submitted_at", "voter", "name", "esr", "email"])
+    writer.writeheader()
+    for voter, row in room.names.items():
+        writer.writerow({
+            "submitted_at": row.get("at") or "",
+            "voter": voter,
+            "name": row.get("name") or "",
+            "esr": row.get("esr") or "",
+            "email": row.get("email") or "",
+        })
+    room.cert_path().write_text(buf.getvalue(), encoding="utf-8-sig")
+    share, folder = attend_config()
+    if share and room.session_name:
+        try:
+            od_upload(room.session_name, names_human_csv(room))
+        except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
+            print("OneDrive upload: {}".format(err), flush=True)
+        return
+    if room.session_file is not None:
+        try:
+            write_human_csv(room, room.session_file)
+        except OSError:
+            pass
+    elif room.session_name and folder is not None:
+        try:
+            write_human_csv(room, folder / room.session_name)
+        except OSError:
+            pass
+
+
+def notify_name(name: str, at: str, esr: str = "", email: str = "") -> None:
+    print("Certificate name: {}  ESR: {}  Email: {}".format(name, esr or "(none)", email or "(none)"), flush=True)
+    if not CERT_WEBHOOK:
+        return
+
+    def send() -> None:
+        payload = json.dumps({"name": name, "esr": esr, "email": email, "at": at, "session": "COPD CPD"}).encode("utf-8")
+        req = urllib.request.Request(
+            CERT_WEBHOOK,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            urllib.request.urlopen(req, timeout=8).read()
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            pass
+
+    threading.Thread(target=send, daemon=True).start()
+
+
+def names_csv(room: Room) -> bytes:
+    return names_human_csv(room)
+
+
+def attach_session(room: Room, payload: dict, include_names: bool = False) -> dict:
+    payload["register"] = room.register_open
+    payload["nameCount"] = len(room.names)
+    payload["room"] = room.id
+    if include_names:
+        payload["names"] = sorted(
+            (row.get("name") or "" for row in room.names.values()),
+            key=str.casefold,
+        )
+    return payload
+
+
+def public_poll(room: Room, include_names: bool = False) -> dict:
+    poll = room.poll
+    if poll.get("kind") == "news2":
         scale1 = scale2 = correct = 0
         spread_counts = {}
-        for vote in POLL["votes"].values():
+        for vote in poll["votes"].values():
             if not isinstance(vote, dict):
                 continue
             if vote.get("scale") == 1:
@@ -126,8 +778,8 @@ def public_poll() -> dict:
             elif vote.get("scale") == 2:
                 scale2 += 1
             if (
-                vote.get("scale") == POLL.get("expectedScale")
-                and vote.get("total") == POLL.get("expectedTotal")
+                vote.get("scale") == poll.get("expectedScale")
+                and vote.get("total") == poll.get("expectedTotal")
             ):
                 correct += 1
             total = vote.get("total")
@@ -135,17 +787,17 @@ def public_poll() -> dict:
             if isinstance(total, int) and scale in (1, 2):
                 key = (total, scale)
                 spread_counts[key] = spread_counts.get(key, 0) + 1
-        revealed = POLL["revealed"]
+        revealed = poll["revealed"]
         out = {
             "live": True,
             "kind": "news2",
-            "id": POLL["id"],
-            "prompt": POLL["prompt"],
-            "obs": POLL.get("obs") or {},
+            "id": poll["id"],
+            "prompt": poll["prompt"],
+            "obs": poll.get("obs") or {},
             "options": [],
-            "open": POLL["open"],
+            "open": poll["open"],
             "revealed": revealed,
-            "total": len(POLL["votes"]),
+            "total": len(poll["votes"]),
             "counts": [],
             "scale1": scale1,
             "scale2": scale2,
@@ -155,31 +807,31 @@ def public_poll() -> dict:
                 {"total": total, "scale": scale, "n": n}
                 for (total, scale), n in sorted(spread_counts.items())
             ],
-            "expectedTotal": POLL.get("expectedTotal"),
-            "expectedScale": POLL.get("expectedScale"),
+            "expectedTotal": poll.get("expectedTotal"),
+            "expectedScale": poll.get("expectedScale"),
             "correct": None,
-            "teach": POLL["teach"] if revealed else "",
+            "teach": poll["teach"] if revealed else "",
         }
-        return out
-    options = POLL["options"]
+        return attach_session(room, out, include_names)
+    options = poll["options"]
     counts = [0] * len(options)
-    for choice in POLL["votes"].values():
+    for choice in poll["votes"].values():
         if isinstance(choice, int) and 0 <= choice < len(counts):
             counts[choice] += 1
-    revealed = POLL["revealed"]
-    return {
+    revealed = poll["revealed"]
+    return attach_session(room, {
         "live": True,
         "kind": "choice",
-        "id": POLL["id"],
-        "prompt": POLL["prompt"],
+        "id": poll["id"],
+        "prompt": poll["prompt"],
         "options": options,
-        "open": POLL["open"],
+        "open": poll["open"],
         "revealed": revealed,
         "counts": counts,
         "total": sum(counts),
-        "correct": POLL["correct"] if revealed else None,
-        "teach": POLL["teach"] if revealed else "",
-    }
+        "correct": poll["correct"] if revealed else None,
+        "teach": poll["teach"] if revealed else "",
+    }, include_names)
 
 
 def qr_svg(text: str) -> bytes:
@@ -255,24 +907,25 @@ def same_origin(handler: SimpleHTTPRequestHandler) -> bool:
     return False
 
 
-def snapshot_poll() -> None:
-    pid = POLL.get("id")
-    if not pid or not POLL.get("votes"):
+def snapshot_poll(room: Room) -> None:
+    poll = room.poll
+    pid = poll.get("id")
+    if not pid or not poll.get("votes"):
         return
-    HISTORY[pid] = {
+    room.history[pid] = {
         "id": pid,
-        "kind": POLL.get("kind"),
-        "prompt": POLL.get("prompt") or "",
-        "options": list(POLL.get("options") or []),
-        "expectedTotal": POLL.get("expectedTotal"),
-        "expectedScale": POLL.get("expectedScale"),
-        "correct": POLL.get("correct"),
-        "votes": dict(POLL.get("votes") or {}),
+        "kind": poll.get("kind"),
+        "prompt": poll.get("prompt") or "",
+        "options": list(poll.get("options") or []),
+        "expectedTotal": poll.get("expectedTotal"),
+        "expectedScale": poll.get("expectedScale"),
+        "correct": poll.get("correct"),
+        "votes": dict(poll.get("votes") or {}),
     }
 
 
-def results_csv() -> bytes:
-    snapshot_poll()
+def results_csv(room: Room) -> bytes:
+    snapshot_poll(room)
     buf = io.StringIO()
     fields = [
         "poll_id",
@@ -294,7 +947,7 @@ def results_csv() -> bytes:
     ]
     writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")
     writer.writeheader()
-    for pid, snap in HISTORY.items():
+    for pid, snap in room.history.items():
         options = snap.get("options") or []
         votes = snap.get("votes") or {}
         for anon, vote in enumerate(votes.values(), 1):
@@ -349,29 +1002,52 @@ def results_csv() -> bytes:
 
 
 def authorised_host(handler: SimpleHTTPRequestHandler) -> bool:
-    parsed = urlparse(handler.path)
-    query_token = (parse_qs(parsed.query).get("host") or [""])[0]
-    token = handler.headers.get("X-Host-Token") or query_token
-    if token and token == HOST_TOKEN:
-        return True
-    if handler.headers.get("X-Presenter-Role") == "1" and same_origin(handler):
-        return True
-    return is_loopback(handler)
+    return secret_is_host(request_host_secret(handler))
+
+
+def reset_poll(poll: dict) -> None:
+    poll["open"] = False
+    poll["id"] = None
+    poll["kind"] = "choice"
+    poll["prompt"] = ""
+    poll["options"] = []
+    poll["obs"] = {}
+    poll["correct"] = None
+    poll["expectedTotal"] = None
+    poll["expectedScale"] = None
+    poll["teach"] = ""
+    poll["revealed"] = False
+    poll["votes"] = {}
 
 
 class Handler(SimpleHTTPRequestHandler):
+    timeout = 90
+
+    def handle(self) -> None:
+        try:
+            super().handle()
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError, TimeoutError, OSError):
+            pass
+
     def log_message(self, fmt: str, *args) -> None:
         path = urlparse(self.path).path
         if path.startswith("/api/"):
             return
         super().log_message(fmt, *args)
 
+    def room_for(self, create: bool = False) -> Room | None:
+        return get_room(request_room_id(self), create=create)
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
         if path in ("/v", "/vote", "/v/"):
+            rid = request_room_id(self)
+            loc = "/?view=vote"
+            if rid:
+                loc += "&r=" + rid
             self.send_response(302)
-            self.send_header("Location", "/?view=vote")
+            self.send_header("Location", loc)
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return
@@ -379,23 +1055,78 @@ class Handler(SimpleHTTPRequestHandler):
             send_json(self, {"ok": True})
             return
         if path == "/api/join":
-            join = join_url(self)
-            payload = {"live": True, "join": join, "ips": lan_ips(), "port": PORT}
-            if is_loopback(self):
-                payload["hostToken"] = HOST_TOKEN
+            with LOCK:
+                if authorised_host(self):
+                    room = self.room_for(create=True)
+                else:
+                    room = self.room_for(create=False)
+                rid = room.id if room else ""
+                join = join_url(self, rid)
+                payload = {"live": True, "join": join, "room": rid, "ips": lan_ips(), "port": PORT}
+                if authorised_host(self):
+                    payload["host"] = True
+                    secret = request_host_secret(self)
+                    if secret_is_host(secret):
+                        payload["hostToken"] = secret
+                        who = presenter_for_token(secret)
+                        if who:
+                            payload["presenter"] = who
             send_json(self, payload)
             return
         if path == "/api/poll":
             with LOCK:
-                send_json(self, public_poll())
+                room = self.room_for(create=False)
+                if room is None:
+                    send_json(self, {"ok": False, "live": False, "error": "no room"}, 404)
+                    return
+                send_json(self, public_poll(room, include_names=authorised_host(self)))
+            return
+        if path == "/api/session":
+            if not authorised_host(self):
+                send_json(self, {"ok": False, "error": "forbidden"}, 403)
+                return
+            with LOCK:
+                room = self.room_for(create=False)
+            if room is None:
+                share, folder = attend_config()
+                send_json(self, {
+                    "ok": True,
+                    "room": "",
+                    "folder": "OneDrive certificates folder" if share else (str(folder) if folder else ""),
+                    "file": "",
+                    "name": "",
+                    "count": 0,
+                    "ready": bool(folder or share),
+                    "exists": False,
+                    "cloud": False,
+                    "url": "",
+                })
+                return
+            send_json(self, session_status(room))
             return
         if path == "/api/results.csv":
             if not authorised_host(self):
                 send_json(self, {"ok": False, "error": "forbidden"}, 403)
                 return
             with LOCK:
-                body = results_csv()
+                room = self.room_for(create=False)
+                if room is None:
+                    send_json(self, {"ok": False, "error": "no room"}, 404)
+                    return
+                body = results_csv(room)
             send_bytes(self, body, "text/csv; charset=utf-8", filename="copd-cpd-results.csv")
+            return
+        if path == "/api/certificates.csv":
+            if not authorised_host(self):
+                send_json(self, {"ok": False, "error": "forbidden"}, 403)
+                return
+            with LOCK:
+                room = self.room_for(create=False)
+                if room is None:
+                    send_json(self, {"ok": False, "error": "no room"}, 404)
+                    return
+                body = names_csv(room)
+            send_bytes(self, body, "text/csv; charset=utf-8", filename="copd-cpd-certificates.csv")
             return
         if path == "/qr.svg":
             send_bytes(self, qr_svg(requested_join(self)), "image/svg+xml; charset=utf-8")
@@ -406,16 +1137,70 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         data = read_json(self)
+        if path == "/api/certificate":
+            voter = str(data.get("voter") or "").strip()[:80]
+            name = clean_name(data.get("name"))
+            esr = clean_esr(data.get("esr"))
+            email = clean_email(data.get("email"))
+            if not voter or len(name) < 2:
+                send_json(self, {"ok": False, "error": "missing name"}, 400)
+                return
+            if len(esr) < 4:
+                send_json(self, {"ok": False, "error": "missing esr"}, 400)
+                return
+            if not email:
+                send_json(self, {"ok": False, "error": "missing email"}, 400)
+                return
+            with LOCK:
+                room = self.room_for(create=False)
+                if room is None:
+                    send_json(self, {"ok": False, "error": "no room"}, 404)
+                    return
+                if not room.register_open:
+                    send_json(self, {"ok": False, "error": "register closed"}, 400)
+                    return
+                if voter not in room.names and len(room.names) >= 400:
+                    send_json(self, {"ok": False, "error": "full"}, 400)
+                    return
+                room.names[voter] = {"name": name, "esr": esr, "email": email, "at": utc_now()}
+                at = room.names[voter]["at"]
+                try:
+                    save_names(room)
+                except OSError:
+                    pass
+                notify_name(name, at, esr, email)
+                send_json(self, {"ok": True, "poll": public_poll(room), "name": name, "esr": esr, "email": email})
+            return
+        if path == "/api/session/start":
+            if not authorised_host(self):
+                print("Start session forbidden from {}".format(self.client_address[0]), flush=True)
+                send_json(self, {"ok": False, "error": "forbidden"}, 403)
+                return
+            presenter = presenter_for_token(request_host_secret(self)) or str(data.get("presenter") or "")
+            print("Start session from {} ({})".format(self.client_address[0], presenter), flush=True)
+            with LOCK:
+                room = self.room_for(create=True)
+            path_out, err = start_session_file(room, presenter)
+            if path_out is None:
+                send_json(self, {"ok": False, "error": err}, 400)
+                return
+            send_json(self, {**session_status(room), "ok": True})
+            return
         if path == "/api/vote":
             voter = str(data.get("voter") or "").strip()[:80]
             if not voter:
                 send_json(self, {"ok": False, "error": "missing voter"}, 400)
                 return
             with LOCK:
-                if not POLL["open"] or POLL["revealed"]:
-                    send_json(self, {"ok": False, "error": "closed", "poll": public_poll()})
+                room = self.room_for(create=False)
+                if room is None:
+                    send_json(self, {"ok": False, "error": "no room", "poll": {"live": False}}, 404)
                     return
-                if POLL.get("kind") == "news2":
+                poll = room.poll
+                if not poll["open"] or poll["revealed"]:
+                    send_json(self, {"ok": False, "error": "closed", "poll": public_poll(room)})
+                    return
+                if poll.get("kind") == "news2":
                     try:
                         scale = int(data.get("scale"))
                     except (TypeError, ValueError):
@@ -426,7 +1211,7 @@ class Handler(SimpleHTTPRequestHandler):
                         return
                     scores = data.get("scores") if isinstance(data.get("scores"), dict) else {}
                     keys = ("rr", "spo2", "o2", "sbp", "pulse", "con", "temp")
-                    parsed = {}
+                    parsed_scores = {}
                     for key in keys:
                         try:
                             val = int(scores.get(key))
@@ -436,26 +1221,26 @@ class Handler(SimpleHTTPRequestHandler):
                         if val not in (0, 1, 2, 3):
                             send_json(self, {"ok": False, "error": "bad score"}, 400)
                             return
-                        parsed[key] = val
-                    POLL["votes"][voter] = {
+                        parsed_scores[key] = val
+                    poll["votes"][voter] = {
                         "scale": scale,
-                        "total": sum(parsed.values()),
-                        "scores": parsed,
+                        "total": sum(parsed_scores.values()),
+                        "scores": parsed_scores,
                     }
-                    snapshot_poll()
-                    send_json(self, {"ok": True, "poll": public_poll()})
+                    snapshot_poll(room)
+                    send_json(self, {"ok": True, "poll": public_poll(room)})
                     return
                 try:
                     choice = int(data.get("choice"))
                 except (TypeError, ValueError):
                     send_json(self, {"ok": False, "error": "bad vote"}, 400)
                     return
-                if choice < 0 or choice >= len(POLL["options"]):
+                if choice < 0 or choice >= len(poll["options"]):
                     send_json(self, {"ok": False, "error": "bad choice"}, 400)
                     return
-                POLL["votes"][voter] = choice
-                snapshot_poll()
-                send_json(self, {"ok": True, "poll": public_poll()})
+                poll["votes"][voter] = choice
+                snapshot_poll(room)
+                send_json(self, {"ok": True, "poll": public_poll(room)})
             return
         if path == "/api/host":
             if not authorised_host(self):
@@ -463,6 +1248,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             action = str(data.get("action") or "")
             with LOCK:
+                room = self.room_for(create=True)
+                poll = room.poll
                 if action == "start":
                     options = data.get("options") if isinstance(data.get("options"), list) else []
                     options = [str(x) for x in options][:8]
@@ -470,62 +1257,68 @@ class Handler(SimpleHTTPRequestHandler):
                     kind = str(data.get("kind") or "choice")
                     kind = kind if kind in ("choice", "news2") else "choice"
                     if (
-                        POLL["revealed"]
-                        and new_id == POLL["id"]
-                        and POLL.get("kind") == kind
-                        and POLL["votes"]
+                        poll["revealed"]
+                        and new_id == poll["id"]
+                        and poll.get("kind") == kind
+                        and poll["votes"]
                     ):
-                        send_json(self, {"ok": True, "poll": public_poll()})
+                        send_json(self, {"ok": True, "poll": public_poll(room, include_names=True)})
                         return
-                    if new_id != POLL["id"] or POLL.get("kind") != kind:
-                        snapshot_poll()
-                        POLL["votes"] = {}
-                    POLL["id"] = new_id
-                    POLL["kind"] = kind
-                    POLL["prompt"] = str(data.get("prompt") or "")[:400]
-                    POLL["options"] = options if kind == "choice" else []
+                    if new_id != poll["id"] or poll.get("kind") != kind:
+                        snapshot_poll(room)
+                        poll["votes"] = {}
+                    poll["id"] = new_id
+                    poll["kind"] = kind
+                    poll["prompt"] = str(data.get("prompt") or "")[:400]
+                    poll["options"] = options if kind == "choice" else []
                     correct = data.get("correct")
-                    POLL["correct"] = int(correct) if isinstance(correct, int) else None
-                    POLL["teach"] = str(data.get("teach") or "")[:1200]
+                    poll["correct"] = int(correct) if isinstance(correct, int) else None
+                    poll["teach"] = str(data.get("teach") or "")[:1200]
                     if kind == "news2":
                         try:
-                            POLL["expectedTotal"] = int(data.get("expectedTotal"))
+                            poll["expectedTotal"] = int(data.get("expectedTotal"))
                         except (TypeError, ValueError):
-                            POLL["expectedTotal"] = None
+                            poll["expectedTotal"] = None
                         try:
                             expected_scale = int(data.get("expectedScale"))
                         except (TypeError, ValueError):
                             expected_scale = 1
-                        POLL["expectedScale"] = expected_scale if expected_scale in (1, 2) else 1
+                        poll["expectedScale"] = expected_scale if expected_scale in (1, 2) else 1
                         obs = data.get("obs") if isinstance(data.get("obs"), dict) else {}
-                        POLL["obs"] = {str(k)[:24]: str(v)[:160] for k, v in list(obs.items())[:12]}
+                        poll["obs"] = {str(k)[:24]: str(v)[:160] for k, v in list(obs.items())[:12]}
                     else:
-                        POLL["expectedTotal"] = None
-                        POLL["expectedScale"] = None
-                        POLL["obs"] = {}
-                    POLL["open"] = True
-                    POLL["revealed"] = False
+                        poll["expectedTotal"] = None
+                        poll["expectedScale"] = None
+                        poll["obs"] = {}
+                    poll["open"] = True
+                    poll["revealed"] = False
+                    room.register_open = False
                 elif action == "reveal":
-                    POLL["revealed"] = True
-                    POLL["open"] = False
-                    snapshot_poll()
+                    poll["revealed"] = True
+                    poll["open"] = False
+                    snapshot_poll(room)
+                    room.register_open = False
                 elif action == "idle":
-                    snapshot_poll()
-                    POLL["open"] = False
-                    POLL["id"] = None
-                    POLL["kind"] = "choice"
-                    POLL["prompt"] = ""
-                    POLL["options"] = []
-                    POLL["obs"] = {}
-                    POLL["correct"] = None
-                    POLL["expectedTotal"] = None
-                    POLL["expectedScale"] = None
-                    POLL["teach"] = ""
-                    POLL["revealed"] = False
-                    POLL["votes"] = {}
-                send_json(self, {"ok": True, "poll": public_poll()})
+                    snapshot_poll(room)
+                    reset_poll(poll)
+                    room.register_open = False
+                elif action == "register":
+                    snapshot_poll(room)
+                    reset_poll(poll)
+                    room.register_open = True
+                send_json(self, {"ok": True, "poll": public_poll(room, include_names=True)})
             return
         send_json(self, {"ok": False, "error": "not found"}, 404)
+
+
+class Server(ThreadingHTTPServer):
+    allow_reuse_address = False
+    request_queue_size = 128
+
+    def server_bind(self) -> None:
+        if os.name == "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
 
 def main() -> None:
@@ -534,16 +1327,33 @@ def main() -> None:
         PORT = int(os.environ["PORT"])
     elif len(sys.argv) > 1:
         PORT = int(sys.argv[1])
-    server = ThreadingHTTPServer(("0.0.0.0", PORT), partial(Handler, directory=str(ROOT)))
+    try:
+        server = Server(("0.0.0.0", PORT), partial(Handler, directory=str(ROOT)))
+    except OSError as err:
+        print("Could not listen on port {} ({}).".format(PORT, err), flush=True)
+        print("Stop the other process using that port (often `python -m http.server {}`).".format(PORT), flush=True)
+        sys.exit(1)
     ips = lan_ips()
+    share, folder = attend_config()
     print()
     print("COPD CPD deck + live quiz", flush=True)
     print("  Presenter:  http://127.0.0.1:{}/?view=presenter".format(PORT), flush=True)
+    if PRESENTERS:
+        print("  Facilitator PINs (Hub staff type their own; they do not need Render):", flush=True)
+        for pin, name in PRESENTERS.items():
+            print("    {}  {}".format(pin, name or "(add their name in presenters.txt)"), flush=True)
+    if share:
+        print("  Attendance: OneDrive certificates folder", flush=True)
+    elif folder:
+        print("  Attendance: {}".format(folder), flush=True)
     if ips:
         print("  Room phones: http://{}:{}/v".format(ips[0], PORT), flush=True)
+        for extra in ips[1:]:
+            print("           also: http://{}:{}/v".format(extra, PORT), flush=True)
+        print("  Phones: same Wi-Fi as this laptop, mobile data OFF, http not https.", flush=True)
     if PUBLIC_URL:
         print("  Teams join:  {}/v".format(PUBLIC_URL), flush=True)
-        print("  Presenter on that host: {}/?view=presenter&host={}".format(PUBLIC_URL, HOST_TOKEN), flush=True)
+        print("  Hosted presenter: {}/?view=presenter  (each facilitator uses their PIN)".format(PUBLIC_URL), flush=True)
     else:
         print("  Teams: share the Audience window. For remote voting, set PUBLIC_URL", flush=True)
         print("         to a public origin (cloudflared / Render) and restart.", flush=True)

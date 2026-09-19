@@ -6,6 +6,14 @@ __pycache__/
 venv/
 ACCOUNTS.md
 host-token.txt
+presenter-pin.txt
+presenters.txt
 *.log
 .DS_Store
-Thumbs.db
+attend-folder.txt
+certificates.csv
+certificates-*.csv
+certificates/*.csv
+COPD-CPD-certificate-names.csv
+COPD-CPD-attendance-*.csv
+Proposal for accreditation/

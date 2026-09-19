@@ -703,7 +703,7 @@ def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str
             return name, ""
         except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
             print("OneDrive upload: {}".format(err), flush=True)
-            return None, "Could not create the file in the OneDrive folder you shared: {}".format(err)
+            return None, "Could not create the file in the OneDrive certificates folder: {}".format(err)
     try:
         written = write_local_bytes(folder / name, body)
     except OSError as err:

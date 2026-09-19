@@ -1472,7 +1472,7 @@
     <div class="pv-join-box">
       <div class="pv-kicker">Session</div>
       <button type="button" id="startSession">Start session — save to OneDrive</button>
-      <p id="sessionFile" class="pv-join-url">Click Start session. The file is created in the OneDrive certificates folder you shared — open it in OneDrive, not File Explorer.</p>
+      <p id="sessionFile" class="pv-join-url">Click Start session. The file is created in the Hub OneDrive certificates folder — open it in OneDrive, not File Explorer.</p>
       <p id="roomCode" class="pv-join-url"></p>
       <div class="pv-kicker" style="margin-top:14px">Room + Teams join</div>
       <p class="pv-join-url" id="joinDisplay">Start python serve.py for a live vote link.</p>
@@ -2854,7 +2854,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         el.textContent = "Presenting as " + hub.presenter + ". Click Start session to create this room’s OneDrive file.";
         return;
       }
-      el.textContent = "Click Start session. The file is created in the OneDrive certificates folder you shared — open it in OneDrive, not File Explorer.";
+      el.textContent = "Click Start session. The file is created in the Hub OneDrive certificates folder — open it in OneDrive, not File Explorer.";
     }
 
     async function refreshSessionStatus() {
@@ -2913,7 +2913,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         const fileName = data.name || sessionFile.split(/[/\\]/).pop() || sessionFile;
         window.alert(
           "Session started.\n\n" + fileName +
-          " is in the OneDrive certificates folder you shared.\n\nOpen that folder in OneDrive in the browser (onedrive.live.com)."
+          " is in the Hub OneDrive certificates folder.\n\nOpen that folder in OneDrive in the browser (onedrive.live.com)."
         );
         return Boolean(sessionFile || data.cloud || data.name);
       } catch (err) {

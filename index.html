@@ -80,11 +80,14 @@
       transform: translateX(-28px);
       z-index: 1;
     }
-    .slide.title-slide {
+    .slide.title-slide,
+    .slide.cert-slide {
       background:
         linear-gradient(90deg, rgba(8, 28, 22, 0.92) 0%, rgba(10, 40, 32, 0.58) 40%, rgba(18, 56, 44, 0.32) 100%),
         linear-gradient(rgba(18, 56, 44, 0.34), rgba(12, 42, 32, 0.34)),
         url("assets/title-ambulance.png") right center / cover no-repeat;
+    }
+    .slide.title-slide {
       color: #f7f4ee;
       justify-content: flex-end;
       padding: 48px 56px 56px;
@@ -94,10 +97,13 @@
     .slide.title-slide .meta { color: #c5dcd0; }
     .slide.title-slide h1,
     .slide.title-slide .subtitle,
-    .slide.title-slide .meta {
+    .slide.title-slide .meta,
+    .slide.cert-slide h2 {
       text-shadow: 0 1px 2px #081510;
     }
-    .slide.title-slide::before {
+    .slide.cert-slide h2 { color: #fff; }
+    .slide.title-slide::before,
+    .slide.cert-slide::before {
       content: "";
       position: absolute;
       left: 0; top: 0; bottom: 0;
@@ -113,7 +119,8 @@
       font-weight: 700;
       margin-bottom: 10px;
     }
-    .title-slide .kicker { color: #f0c36a; }
+    .title-slide .kicker,
+    .cert-slide .kicker { color: #f0c36a; }
     h1 {
       font-size: clamp(32px, 4.4vw, 58px);
       line-height: 1.08;
@@ -240,7 +247,8 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .title-slide .footer-bar { color: #8fb3a6; left: 56px; right: 56px; }
+    .title-slide .footer-bar,
+    .cert-slide .footer-bar { color: #8fb3a6; left: 56px; right: 56px; }
 
     .controls {
       position: fixed;
@@ -514,6 +522,95 @@
     }
     body.self .poll-slide.revealed .self-hint { display: none; }
 
+    #home {
+      display: none;
+      min-height: 100%;
+      padding: 28px 18px 40px;
+      align-items: center;
+      justify-content: center;
+    }
+    body.home {
+      overflow: auto;
+    }
+    body.home #home { display: flex; }
+    body.home .stage,
+    body.home .controls,
+    body.home .pv-side { display: none !important; }
+    .home-panel {
+      width: min(920px, 100%);
+      background: var(--paper);
+      color: var(--ink);
+      border: 1px solid #1c3f34;
+      padding: 36px 40px 32px;
+    }
+    .home-kicker {
+      font-size: 13px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #8a5608;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .home-panel h1 {
+      font-size: clamp(26px, 4vw, 36px);
+      color: var(--navy);
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+    .home-lead {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 46ch;
+      line-height: 1.4;
+    }
+    .home-choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .home-choices a {
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 20px 18px 18px;
+      min-height: 168px;
+    }
+    .home-choices a:hover,
+    .home-choices a:focus-visible {
+      border-color: var(--navy);
+      background: #f7edd4;
+      outline: none;
+    }
+    .home-choices h2 {
+      font-size: 20px;
+      color: var(--navy);
+      margin-bottom: 8px;
+    }
+    .home-choices p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    @media (max-width: 720px) {
+      .home-panel { padding: 24px 20px 20px; }
+      .home-choices { grid-template-columns: 1fr; }
+      .home-choices a { min-height: 0; }
+    }
+    .controls a.home-link {
+      background: #1c4236;
+      color: #e8f5ee;
+      border: 0;
+      padding: 7px 12px;
+      font: inherit;
+      text-decoration: none;
+    }
+    .controls a.home-link:hover { background: #2a5c4a; }
+    body:not(.self) a.home-link { display: none; }
+
     .pv-side { display: contents; }
     .pv-side > :not(.notes) { display: none; }
     body.presenter {
@@ -702,11 +799,23 @@
       border: 1px solid var(--line);
       padding: 8px 8px 10px;
     }
-    body.live .poll-join { display: block; }
+    body.live .poll-join,
+    .poll-join.cert-join {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .poll-join.cert-join {
+      width: auto;
+      max-width: 220px;
+      margin: 0 auto;
+    }
     .poll-join img {
       width: 132px;
       height: 132px;
+      max-width: 100%;
       display: block;
+      margin: 0 auto;
     }
     .poll-url {
       font-size: 11px;
@@ -1329,6 +1438,27 @@
   </style>
 </head>
 <body>
+  <main id="home">
+    <div class="home-panel">
+      <p class="home-kicker">Hub CPD  ·  JRCALC G0390</p>
+      <h1>COPD, Type 2 Respiratory Failure and NEWS2</h1>
+      <p class="home-lead">Ambulance staff CPD. About 30 minutes. Teaching summary of JRCALC Plus, not a substitute for the live guideline.</p>
+      <div class="home-choices">
+        <a href="?view=self">
+          <h2>Self-guided</h2>
+          <p>Work through the slides yourself. Check questions as you go. No live vote or register.</p>
+        </a>
+        <a href="?view=presenter">
+          <h2>Presenter-guided</h2>
+          <p>Deliver the session in the room or on Teams. Hub PIN required. Live vote and certificates.</p>
+        </a>
+        <a href="handout.html">
+          <h2>Handout</h2>
+          <p>Two A4 pages. Print or save as PDF.</p>
+        </a>
+      </div>
+    </div>
+  </main>
   <div class="stage" id="stage"></div>
   <div class="pv-side" id="pvSide">
     <div class="pv-kicker">Next slide</div>
@@ -1360,6 +1490,7 @@
     <button type="button" id="prev">Back</button>
     <button type="button" id="next">Next</button>
     <button type="button" id="startBtn" title="First slide (Home)">Return to start</button>
+    <a class="home-link" href="./">Home</a>
     <div class="progress"><span id="bar"></span></div>
     <span id="count"></span>
     <button type="button" id="notesBtn">Notes (N)</button>
@@ -2251,11 +2382,17 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         notes: "Ask staff to open G0390 after the session. If the ePR auto-selects Scale 2 from a COPD tick-box, that is a governance issue worth feeding back."
       },
       {
-        type: "title",
-        kicker: "Questions",
-        title: "What will you do differently on the next COPD job?",
-        subtitle: "If type 2 failure is not already documented by a hospital or specialist team, score NEWS2 on Scale 1. Still titrate oxygen to 88–92%.",
-        notes: "Finish on the behaviour change, not ‘any questions’ as an empty ritual. Offer to stay for ePR / local pathway queries. Next slide collects names for certificates — leave that one up. Space / S presenter view / F fullscreen."
+        questions: true,
+        kicker: "Close",
+        title: "Any questions?",
+        html: `
+          <div class="body">
+            <div class="banner dark" style="font-size:clamp(28px,3.2vw,42px);padding:28px 24px">Thank you for attending</div>
+            <div class="banner teal" style="margin-top:12px;padding:22px 24px">We hope it has been useful</div>
+            <div class="banner" style="margin-top:12px;padding:22px 24px">Ask now, or email: <a href="mailto:jon.ostrowski@wmas.nhs.uk" style="color:inherit;text-decoration:underline">jon.ostrowski@wmas.nhs.uk</a></div>
+            <div class="banner green" style="margin-top:12px;padding:22px 24px">Any suggestions for future CPD sessions?</div>
+          </div>`,
+        notes: "Leave this up. Offer to stay for ePR / local pathway queries. Next slide collects names for certificates — leave that one up."
       },
       {
         collectNames: true,
@@ -2271,7 +2408,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
               </ul>
               <p style="margin-top:14px;font-size:28px;font-weight:750;color:var(--navy)"><span class="cert-total">0</span> names in</p>
             </div>
-            <aside class="poll-join cert-join" style="display:block;width:auto;max-width:220px;margin:0 auto">
+            <aside class="poll-join cert-join">
               <img alt="Join to add your name" width="132" height="132" />
               <p class="poll-url"></p>
               <p class="poll-phones">Scan if you closed the vote page</p>
@@ -2283,7 +2420,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
 
     const selfMode = new URLSearchParams(location.search).get("view") === "self";
     const slides = slideSource.flatMap((s) => {
-      if (selfMode && s.collectNames) return [];
+      if (selfMode && (s.collectNames || s.questions)) return [];
       if (selfMode && s.type === "title" && s.title.indexOf("COPD, Type 2") === 0) {
         return [{ ...s, kicker: "Self-guided CPD  ·  about 30 minutes" }];
       }
@@ -2367,7 +2504,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     const requested = params.get("view");
     let view = requested === "presenter" || requested === "audience" || requested === "vote" || requested === "self"
       ? requested
-      : "single";
+      : "home";
     try {
       const clean = new URL(location.href);
       if (clean.searchParams.has("host")) {
@@ -2498,6 +2635,8 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         pvBtn.textContent = "Printable handout";
         notesEl.classList.remove("visible");
         setHubLive(false);
+      } else if (view === "home") {
+        document.title = "COPD CPD | Hub CPD";
       } else {
         document.title = "COPD in Pre-hospital Care | Ambulance CPD";
         pvBtn.textContent = "Presenter view (S)";
@@ -2596,7 +2735,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
           <div class="footer-bar"><span>Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
       }
-      return `<section class="slide" data-i="${idx}">
+      return `<section class="slide${s.collectNames ? " cert-slide" : ""}" data-i="${idx}">
         <div class="kicker">${s.kicker}</div>
         <h2>${s.title}</h2>
         ${s.html}
@@ -3474,7 +3613,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     timerEl.onclick = () => { timerStarted = Date.now(); };
 
     window.addEventListener("keydown", (e) => {
-      if (view === "vote") return;
+      if (view === "vote" || view === "home") return;
       if (e.target && e.target.closest && e.target.closest("input, textarea, select")) return;
       if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); stepForward(); }
       if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); stepBack(); }
@@ -3489,7 +3628,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     });
 
     window.addEventListener("click", (e) => {
-      if (view === "vote") return;
+      if (view === "vote" || view === "home") return;
       if (e.target.closest("button, a, input, textarea, select, label, .pv-side, .controls, .notes, #voteApp, #cpdCert")) return;
       stepForward();
     });
@@ -3516,6 +3655,9 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
 
     if (view === "vote") {
       runVoteApp();
+    } else if (view === "home") {
+      document.body.classList.add("home");
+      applyView();
     } else {
       requirePresenterAccess().then((ok) => {
         if (!ok) return;

@@ -312,24 +312,49 @@ def extra_cert_paths() -> list[Path]:
     return unique
 
 
+def attend_file_sections(lines: list[str]) -> dict[str, dict[str, str]]:
+    sections: dict[str, dict[str, str]] = {
+        "dev": {"share": "", "folder": ""},
+        "live": {"share": "", "folder": ""},
+        "any": {"share": "", "folder": ""},
+    }
+    current = "any"
+    for line in lines:
+        raw = line.strip().strip('"')
+        if not raw:
+            continue
+        if raw.startswith("#"):
+            label = raw[1:].strip().upper()
+            if "DEV" in label:
+                current = "dev"
+            elif "LIVE" in label or "PROD" in label:
+                current = "live"
+            continue
+        lower = raw.lower()
+        slot = sections[current]
+        if lower.startswith("http://") or lower.startswith("https://"):
+            if not slot["share"]:
+                slot["share"] = raw
+        elif not slot["folder"]:
+            slot["folder"] = raw
+    return sections
+
+
 def attend_config() -> tuple[str, Path | None]:
     share = (os.environ.get("ATTEND_SHARE_URL") or "").strip().strip('"')
     folder_raw = (os.environ.get("ATTEND_FOLDER") or "").strip().strip('"')
-    if ATTEND_CONFIG.exists():
+    if ATTEND_CONFIG.exists() and not share:
         try:
             lines = ATTEND_CONFIG.read_text(encoding="utf-8").splitlines()
         except OSError:
             lines = []
-        for line in lines:
-            raw = line.strip().strip('"')
-            if not raw or raw.startswith("#"):
-                continue
-            lower = raw.lower()
-            if lower.startswith("http://") or lower.startswith("https://"):
-                if not share:
-                    share = raw
-            elif not folder_raw:
-                folder_raw = raw
+        parts = attend_file_sections(lines)
+        chosen = parts["dev"]
+        fallback = parts["any"]
+        other = parts["live"]
+        share = chosen["share"] or fallback["share"] or other["share"]
+        if not folder_raw:
+            folder_raw = chosen["folder"] or fallback["folder"] or other["folder"]
     if share:
         return share, None
     if not folder_raw:
@@ -1343,7 +1368,9 @@ def main() -> None:
         for pin, name in PRESENTERS.items():
             print("    {}  {}".format(pin, name or "(add their name in presenters.txt)"), flush=True)
     if share:
-        print("  Attendance: OneDrive certificates folder", flush=True)
+        print("  Attendance: OneDrive {} certificates folder".format(
+            "live" if (os.environ.get("ATTEND_SHARE_URL") or os.environ.get("RENDER")) else "dev"
+        ), flush=True)
     elif folder:
         print("  Attendance: {}".format(folder), flush=True)
     if ips:

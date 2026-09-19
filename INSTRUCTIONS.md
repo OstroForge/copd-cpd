@@ -14,7 +14,7 @@ Then open on **this laptop**:
 
 | What | URL |
 | --- | --- |
-| Deck | http://127.0.0.1:8765/ |
+| Home | http://127.0.0.1:8765/ |
 | Presenter / notes | http://127.0.0.1:8765/?view=presenter |
 | Audience window (share this) | http://127.0.0.1:8765/?view=audience |
 | Self-guided (no vote, no register) | http://127.0.0.1:8765/?view=self |
@@ -67,13 +67,13 @@ Use this when you are not presenting from this laptop, or when Teams needs a pub
 
 | What | URL |
 | --- | --- |
-| Live session (voting works here) | https://copd-cpd.onrender.com/ |
+| Home (choose self-guided, presenter, or handout) | https://copd-cpd.onrender.com/ |
 | Presenter / notes | https://copd-cpd.onrender.com/?view=presenter |
 | Audience window (share this) | https://copd-cpd.onrender.com/?view=audience |
 | Phone / Teams vote page | https://copd-cpd.onrender.com/v |
 | Self-guided (no vote, no register) | https://copd-cpd.onrender.com/?view=self |
 | Printable handout | https://copd-cpd.onrender.com/handout.html |
-| GitHub copy (self-guided) | https://ostroforge.github.io/copd-cpd/?view=self |
+| GitHub copy | https://ostroforge.github.io/copd-cpd/ |
 | GitHub handout | https://ostroforge.github.io/copd-cpd/handout.html |
 | Source code | https://github.com/OstroForge/copd-cpd |
 | Render dashboard | https://dashboard.render.com/web/srv-dalud967bikc73akh3bg |
@@ -128,7 +128,7 @@ You can still download **certificate names** from the presenter sidebar. On Rend
 
 https://onedrive.live.com/my?id=%2Fpersonal%2F4a2042dbbcf48071%2FDocuments%2FCursor%20Projects%2FCPD%2FCOPD%2Fcertificates&viewid=6c1bdb91-03c5-436a-8302-197408acb301
 
-On this laptop, `attend-folder.txt` (gitignored) holds the folder **share** link the server uses to upload. Click **Start session** in presenter view — names write into that folder as `COPD-CPD-attendance-YYYY-MM-DD-HHMM-Presenter-ROOM.csv`, with columns `submitted_at`, `name`, `esr`, `email`, and no save box. On Render, set the environment variable `ATTEND_SHARE_URL` to the same OneDrive folder share. Do not commit that share link.
+On this laptop, `attend-folder.txt` (gitignored) can list both folders. Put a `# LIVE` block and a `# DEV` block, each with the OneDrive **share** link (and optional local path). `python serve.py` uses **DEV**. Render ignores this file and uses `ATTEND_SHARE_URL` for the **LIVE** folder. Click **Start session** in presenter view — names write as `COPD-CPD-attendance-YYYY-MM-DD-HHMM-Presenter-ROOM.csv`, with columns `submitted_at`, `name`, `esr`, `email`. Do not commit that share link.
 
 ## Handout and self-guided
 

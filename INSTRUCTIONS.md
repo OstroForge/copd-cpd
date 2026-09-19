@@ -67,12 +67,13 @@ Use this when you are not presenting from this laptop, or when Teams needs a pub
 
 | What | URL |
 | --- | --- |
-| Home (choose self-guided, presenter, or handout) | https://copd-cpd.onrender.com/ |
-| Presenter / notes | https://copd-cpd.onrender.com/?view=presenter |
-| Audience window (share this) | https://copd-cpd.onrender.com/?view=audience |
-| Phone / Teams vote page | https://copd-cpd.onrender.com/v |
-| Self-guided (no vote, no register) | https://copd-cpd.onrender.com/?view=self |
-| Printable handout | https://copd-cpd.onrender.com/handout.html |
+| Home (choose self-guided, presenter, or handout) | https://hub-cpd.onrender.com/ |
+| Presenter / notes | https://hub-cpd.onrender.com/?view=presenter |
+| Audience window (share this) | https://hub-cpd.onrender.com/?view=audience |
+| Phone / Teams vote page | https://hub-cpd.onrender.com/v |
+| Self-guided (no vote, no register) | https://hub-cpd.onrender.com/?view=self |
+| Printable handout | https://hub-cpd.onrender.com/handout.html |
+| Old COPD URL (forwards to Hub) | https://copd-cpd.onrender.com/ |
 | GitHub copy | https://ostroforge.github.io/copd-cpd/ |
 | GitHub handout | https://ostroforge.github.io/copd-cpd/handout.html |
 | Source code | https://github.com/OstroForge/copd-cpd |
@@ -87,6 +88,8 @@ Keep the list in `presenters.txt` or `presenter-pin.txt` on this laptop (gitigno
 On Render, set `PRESENTERS` to the same list as `PIN:Full Name;PIN:Full Name`. Do not put PINs in this public file or in the room’s Teams chat. The `r=` code on a join/QR link is the **room** for that session, not a PIN.
 
 Free Render instances sleep after a quiet spell. The first open can take about a minute.
+
+The live hostname is **hub-cpd.onrender.com**. In the Render dashboard, add a second web service named exactly `hub-cpd` from this GitHub repo (same `python serve.py`, copy `PRESENTERS` and `ATTEND_SHARE_URL` from the existing service). Keep the current `copd-cpd` service running so https://copd-cpd.onrender.com/ can forward. Do not put PINs in this public file.
 
 ## Accounts
 
@@ -106,7 +109,7 @@ https://onedrive.live.com/my?id=%2Fpersonal%2F4a2042dbbcf48071%2FDocuments%2FCur
 ## On the day
 
 1. Wake the live site (or start `python serve.py`).
-2. On your laptop, open **presenter** view (local `http://127.0.0.1:8765/?view=presenter` or https://copd-cpd.onrender.com/?view=presenter) — type **your** Hub PIN when asked. Start session uses your name from that PIN.
+2. On your laptop, open **presenter** view (local `http://127.0.0.1:8765/?view=presenter` or https://hub-cpd.onrender.com/?view=presenter) — type **your** Hub PIN when asked. Start session uses your name from that PIN.
 3. Share the **Audience** window to the projector and/or Teams (Share window, not the presenter screen).
 4. Room: scan **this session’s** QR (it includes a room code). Teams: copy the join link from the presenter sidebar into chat — do not reuse another facilitator’s QR.
 5. Space, a mouse click on the slide, a wireless clicker (Page Down / next), or **Next** on a question goes to the results slide. Download **results CSV** from the presenter sidebar or the bottom bar before the service sleeps.

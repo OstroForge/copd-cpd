@@ -95,6 +95,28 @@ def host_is_local(host: str) -> bool:
     return name in ("", "localhost", "127.0.0.1", "::1")
 
 
+HUB_ORIGIN = "https://hub-cpd.onrender.com"
+LEGACY_HOSTS = {"copd-cpd.onrender.com"}
+
+
+def request_host_name(handler: SimpleHTTPRequestHandler) -> str:
+    return (handler.headers.get("Host") or "").split(":")[0].strip().lower()
+
+
+def redirect_legacy_host(handler: SimpleHTTPRequestHandler) -> bool:
+    host = request_host_name(handler)
+    if host not in LEGACY_HOSTS:
+        return False
+    path = handler.path or "/"
+    if path.split("?", 1)[0] == "/healthz":
+        return False
+    handler.send_response(308)
+    handler.send_header("Location", HUB_ORIGIN + path)
+    handler.send_header("Cache-Control", "public, max-age=3600")
+    handler.end_headers()
+    return True
+
+
 def request_base(handler: SimpleHTTPRequestHandler) -> str:
     if PUBLIC_URL:
         return PUBLIC_URL
@@ -1064,6 +1086,8 @@ class Handler(SimpleHTTPRequestHandler):
         return get_room(request_room_id(self), create=create)
 
     def do_GET(self) -> None:
+        if redirect_legacy_host(self):
+            return
         parsed = urlparse(self.path)
         path = parsed.path
         if path in ("/v", "/vote", "/v/"):
@@ -1159,6 +1183,8 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self) -> None:
+        if redirect_legacy_host(self):
+            return
         parsed = urlparse(self.path)
         path = parsed.path
         data = read_json(self)

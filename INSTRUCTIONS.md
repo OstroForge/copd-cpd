@@ -73,6 +73,7 @@ Use this when you are not presenting from this laptop, or when Teams needs a pub
 | Phone / Teams vote page | https://hub-cpd.onrender.com/v |
 | Self-guided (no vote, no register) | https://hub-cpd.onrender.com/?view=self |
 | Printable handout | https://hub-cpd.onrender.com/handout.html |
+| Get my certificate | https://hub-cpd.onrender.com/?view=lookup |
 | Old COPD URL (forwards to Hub) | https://copd-cpd.onrender.com/ |
 | GitHub copy | https://ostroforge.github.io/copd-cpd/ |
 | GitHub handout | https://ostroforge.github.io/copd-cpd/handout.html |
@@ -113,7 +114,7 @@ https://onedrive.live.com/my?id=%2Fpersonal%2F4a2042dbbcf48071%2FDocuments%2FCur
 3. Share the **Audience** window to the projector and/or Teams (Share window, not the presenter screen).
 4. Room: scan **this session’s** QR (it includes a room code). Teams: copy the join link from the presenter sidebar into chat — do not reuse another facilitator’s QR.
 5. Space, a mouse click on the slide, a wireless clicker (Page Down / next), or **Next** on a question goes to the results slide. Download **results CSV** from the presenter sidebar or the bottom bar before the service sleeps.
-6. Last slide collects **certificate names**, **ESR numbers** and **work emails**. Leave it up. Phones only see that form on that slide. ESR and email are stored in the attendance CSV only — they are not printed on the certificate. Names are saved automatically.
+6. Last slide collects **certificate names**, **ESR numbers** and **work emails**. Leave it up. Phones only see that form on that slide. ESR and email are stored in the attendance CSV only — they are not printed on the certificate. Names are saved automatically. Staff can reprint a certificate later from **Get my certificate** on the home page (`/?view=lookup`) with the same name and ESR.
 
 Two people can deliver the same CPD at the same time. Each opens presenter view on the **same live site** (usually Render). The site gives each facilitator a different room code, a different attendance file, and quiz answers from their own phones only. Phones must scan the QR on **that** screen.
 

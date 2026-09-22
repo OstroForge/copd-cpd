@@ -566,7 +566,7 @@
     }
     .home-choices {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 14px;
       margin-top: 28px;
     }
@@ -610,6 +610,57 @@
     }
     .controls a.home-link:hover { background: #2a5c4a; }
     body:not(.self) a.home-link { display: none; }
+
+    #lookup {
+      display: none;
+      min-height: 100%;
+      padding: 28px 18px 40px;
+      align-items: center;
+      justify-content: center;
+    }
+    body.lookup { overflow: auto; }
+    body.lookup #lookup { display: flex; }
+    body.lookup .stage,
+    body.lookup .controls,
+    body.lookup .pv-side { display: none !important; }
+    .lookup-form label {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      margin: 14px 0 6px;
+    }
+    .lookup-form input,
+    .lookup-form select {
+      width: 100%;
+      font: inherit;
+      font-size: 18px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+    }
+    .lookup-form button {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      background: var(--navy);
+      color: #f7f4ee;
+      border: 0;
+      padding: 14px 16px;
+      font: inherit;
+      font-size: 18px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+    .lookup-form button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .lookup-status { margin-top: 12px; color: var(--muted); font-size: 16px; }
+    .lookup-home {
+      display: inline-block;
+      margin-top: 18px;
+      color: var(--navy);
+      font-weight: 700;
+    }
 
     .pv-side { display: contents; }
     .pv-side > :not(.notes) { display: none; }
@@ -1292,38 +1343,155 @@
     .cpd-cert-page {
       box-sizing: border-box;
       width: 100%;
-      max-width: 900px;
+      max-width: none;
       margin: 0 auto;
-      padding: 36px 40px 32px;
-      background: #f0e2c4;
+      padding: 10px;
+      background: #12382c;
       color: #1c2333;
-      border: 12px solid #12382c;
       font-family: "Segoe UI", Calibri, Arial, sans-serif;
     }
+    .cpd-cert-frame {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 188mm;
+      padding: 28px 36px 22px;
+      background:
+        linear-gradient(180deg, rgba(18, 56, 44, 0.06), rgba(18, 56, 44, 0) 28%),
+        #f6edd8;
+      border: 2px solid #d4a017;
+      overflow: hidden;
+    }
+    .cpd-cert-frame::before,
+    .cpd-cert-frame::after {
+      content: "";
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border: 3px solid #d4a017;
+      pointer-events: none;
+    }
+    .cpd-cert-frame::before { top: 12px; left: 12px; border-right: 0; border-bottom: 0; }
+    .cpd-cert-frame::after { top: 12px; right: 12px; border-left: 0; border-bottom: 0; }
+    .cpd-cert-corner {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border: 3px solid #d4a017;
+      pointer-events: none;
+    }
+    .cpd-cert-corner.bl { left: 12px; bottom: 12px; border-right: 0; border-top: 0; }
+    .cpd-cert-corner.br { right: 12px; bottom: 12px; border-left: 0; border-top: 0; }
+    .cpd-cert-layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 28px 40px;
+      align-items: center;
+      padding: 4px 8px 0;
+    }
+    .cpd-cert-main {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+      max-width: 48ch;
+      padding: 0;
+    }
+    .cpd-cert-mark {
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #f6edd8;
+      background: #12382c;
+      padding: 7px 12px;
+      margin: 0 0 18px;
+    }
     .cpd-cert-page .kicker {
-      font-size: 13px;
-      letter-spacing: 0.16em;
+      font-size: 12px;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
       color: #8a5608;
       font-weight: 700;
-      margin: 0 0 10px;
+      margin: 0 0 8px;
+      white-space: nowrap;
     }
     .cpd-cert-page h1 {
-      font-size: 34px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 42px;
+      font-weight: 600;
       color: #12382c;
-      letter-spacing: -0.03em;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
       margin: 0 0 18px;
       max-width: none;
     }
-    .cpd-cert-page p { margin: 0 0 10px; font-size: 18px; line-height: 1.4; }
+    .cpd-cert-page .lead {
+      margin: 0;
+      font-size: 16px;
+      color: #5b6b64;
+    }
     .cpd-cert-page .who {
-      font-size: 36px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: #12382c;
+      margin: 10px 0 14px;
+      padding-bottom: 10px;
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid #d4a017;
+    }
+    .cpd-cert-page .course {
+      margin: 8px 0 0;
+      font-size: 22px;
       font-weight: 750;
       color: #12382c;
-      margin: 16px 0 18px;
-      letter-spacing: -0.03em;
+      line-height: 1.25;
     }
-    .cpd-cert-page .meta { color: #5b6b64; font-size: 15px; margin-top: 22px; }
+    .cpd-cert-page .meta {
+      color: #5b6b64;
+      font-size: 16px;
+      margin: 18px 0 0;
+    }
+    .cpd-cert-bottom {
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 24px;
+      margin-top: 8px;
+      padding: 0 8px;
+    }
+    .cpd-cert-issued {
+      margin: 0;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5b6b64;
+      font-weight: 700;
+    }
+    .cpd-cert-qr {
+      text-align: center;
+      flex: 0 0 auto;
+      justify-self: end;
+    }
+    .cpd-cert-qr img {
+      display: block;
+      width: 128px;
+      height: 128px;
+      background: #fff;
+      padding: 7px;
+      border: 1px solid #d4c19a;
+    }
+    .cpd-cert-qr p {
+      margin: 6px 0 0;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #5b6b64;
+      font-weight: 700;
+    }
     body.vote .n2-lab { color: #e8f3ed; }
     body.vote .n2-caption { color: #a8c4b6; }
     body.vote .n2-row { grid-template-columns: 92px 1fr; }
@@ -1427,12 +1595,23 @@
       body.cert-printing .stage,
       body.cert-printing .controls,
       body.cert-printing .pv-side,
-      body.cert-printing #voteApp { display: none !important; }
+      body.cert-printing #voteApp,
+      body.cert-printing #home,
+      body.cert-printing #lookup { display: none !important; }
       body.cert-printing #cpdCert { display: block !important; }
       body.cert-printing { background: #fff; }
       body.cert-printing .cpd-cert-page {
-        border-width: 10px;
+        width: 277mm;
+        height: 190mm;
         max-width: none;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      body.cert-printing .cpd-cert-frame {
+        min-height: 100%;
+        height: 100%;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
     }
   </style>
@@ -1456,7 +1635,31 @@
           <h2>Handout</h2>
           <p>Two A4 pages. Print or save as PDF.</p>
         </a>
+        <a href="?view=lookup">
+          <h2>Get my certificate</h2>
+          <p>Enter the course, your name and ESR number to print your certificate again.</p>
+        </a>
       </div>
+    </div>
+  </main>
+  <main id="lookup">
+    <div class="home-panel">
+      <p class="home-kicker">Hub CPD</p>
+      <h1>Get my certificate</h1>
+      <p class="home-lead">Enter the same name and ESR number you used at the end of the session. ESR is for the register only and is not printed on the certificate.</p>
+      <form class="lookup-form" id="lookupForm">
+        <label for="lookupCourse">Course attended</label>
+        <select id="lookupCourse" name="course" required>
+          <option value="copd">COPD, Type 2 Respiratory Failure and NEWS2</option>
+        </select>
+        <label for="lookupName">Name on the certificate</label>
+        <input id="lookupName" name="name" type="text" maxlength="80" autocomplete="name" required />
+        <label for="lookupEsr">ESR (GRS) number</label>
+        <input id="lookupEsr" name="esr" type="text" inputmode="numeric" maxlength="16" autocomplete="off" required />
+        <button type="submit">Find my certificate</button>
+      </form>
+      <p class="lookup-status" id="lookupStatus"></p>
+      <a class="lookup-home" href="./">Home</a>
     </div>
   </main>
   <div class="stage" id="stage"></div>
@@ -1509,14 +1712,29 @@
   </div>
   <div id="cpdCert" hidden>
     <div class="cpd-cert-page">
-      <p class="kicker">Hub CPD</p>
-      <h1>Certificate of attendance</h1>
-      <p>This is to certify that</p>
-      <p class="who" id="cpdCertName"></p>
-      <p>attended the ambulance CPD session</p>
-      <p><strong>COPD, Type 2 Respiratory Failure and NEWS2</strong></p>
-      <p>JRCALC Chronic Obstructive Pulmonary Disease (G0390) · 30 minutes</p>
-      <p class="meta" id="cpdCertDate"></p>
+      <div class="cpd-cert-frame">
+        <span class="cpd-cert-corner bl"></span>
+        <span class="cpd-cert-corner br"></span>
+        <div class="cpd-cert-mark">Hub CPD</div>
+        <div class="cpd-cert-layout">
+          <div class="cpd-cert-main">
+            <p class="kicker">Ambulance CPD</p>
+            <h1>Certificate of attendance</h1>
+            <p class="lead">This is to certify that</p>
+            <p class="who" id="cpdCertName"></p>
+            <p class="lead">attended</p>
+            <p class="course" id="cpdCertCourse">COPD, Type 2 Respiratory Failure and NEWS2</p>
+            <p class="meta" id="cpdCertDate"></p>
+          </div>
+          <aside class="cpd-cert-qr">
+            <img id="cpdCertQr" alt="Open Hub CPD home" width="128" height="128" />
+            <p>Scan for Hub CPD home</p>
+          </aside>
+        </div>
+        <div class="cpd-cert-bottom">
+          <p class="cpd-cert-issued">Issued by Hub CPD</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2502,7 +2720,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     const CHANNEL = "copd-cpd-deck";
     const params = new URLSearchParams(location.search);
     const requested = params.get("view");
-    let view = requested === "presenter" || requested === "audience" || requested === "vote" || requested === "self"
+    let view = requested === "presenter" || requested === "audience" || requested === "vote" || requested === "self" || requested === "lookup"
       ? requested
       : "home";
     try {
@@ -2637,6 +2855,8 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         setHubLive(false);
       } else if (view === "home") {
         document.title = "COPD CPD | Hub CPD";
+      } else if (view === "lookup") {
+        document.title = "Get my certificate | Hub CPD";
       } else {
         document.title = "COPD in Pre-hospital Care | Ambulance CPD";
         pvBtn.textContent = "Presenter view (S)";
@@ -3613,7 +3833,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     timerEl.onclick = () => { timerStarted = Date.now(); };
 
     window.addEventListener("keydown", (e) => {
-      if (view === "vote" || view === "home") return;
+      if (view === "vote" || view === "home" || view === "lookup") return;
       if (e.target && e.target.closest && e.target.closest("input, textarea, select")) return;
       if (["ArrowRight", "PageDown", " ", "Enter"].includes(e.key)) { e.preventDefault(); stepForward(); }
       if (["ArrowLeft", "PageUp", "Backspace"].includes(e.key)) { e.preventDefault(); stepBack(); }
@@ -3628,7 +3848,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     });
 
     window.addEventListener("click", (e) => {
-      if (view === "vote" || view === "home") return;
+      if (view === "vote" || view === "home" || view === "lookup") return;
       if (e.target.closest("button, a, input, textarea, select, label, .pv-side, .controls, .notes, #voteApp, #cpdCert")) return;
       stepForward();
     });
@@ -3653,11 +3873,139 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       timerEl.textContent = `${m}:${s}`;
     }, 1000);
 
+    function certHomeUrl() {
+      const hosted = "https://hub-cpd.onrender.com/";
+      try {
+        if (isLanHost(location.hostname)) return hosted;
+        const home = new URL("/", location.origin);
+        home.search = "";
+        home.hash = "";
+        return home.toString();
+      } catch (err) {
+        return hosted;
+      }
+    }
+
+    function printCpdCertificate(name, when, course) {
+      const who = String(name || "").trim();
+      if (who.length < 2) return;
+      const nameEl = document.getElementById("cpdCertName");
+      const dateEl = document.getElementById("cpdCertDate");
+      const courseEl = document.getElementById("cpdCertCourse");
+      const qrEl = document.getElementById("cpdCertQr");
+      const sheet = document.getElementById("cpdCert");
+      if (!nameEl || !dateEl || !sheet) return;
+      nameEl.textContent = who;
+      if (courseEl) courseEl.textContent = (course && course.title) || "COPD, Type 2 Respiratory Failure and NEWS2";
+      const raw = String(when || "").trim();
+      const parsed = raw ? new Date(raw) : new Date();
+      const stamp = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+      dateEl.textContent = stamp.toLocaleDateString("en-GB", {
+        weekday: "long", day: "numeric", month: "long", year: "numeric"
+      });
+      let pageStyle = document.getElementById("cpdCertPageStyle");
+      if (!pageStyle) {
+        pageStyle = document.createElement("style");
+        pageStyle.id = "cpdCertPageStyle";
+        document.head.appendChild(pageStyle);
+      }
+      pageStyle.textContent = "@page { size: A4 landscape; margin: 8mm; }";
+      sheet.hidden = false;
+      document.body.classList.add("cert-printing");
+      let started = false;
+      const done = () => {
+        if (!document.body.classList.contains("cert-printing")) return;
+        document.body.classList.remove("cert-printing");
+        sheet.hidden = true;
+        if (pageStyle) pageStyle.textContent = "";
+        window.removeEventListener("afterprint", done);
+      };
+      const goPrint = () => {
+        if (started) return;
+        started = true;
+        window.addEventListener("afterprint", done);
+        window.setTimeout(done, 120000);
+        window.setTimeout(() => window.print(), 50);
+      };
+      if (!qrEl) {
+        goPrint();
+        return;
+      }
+      const home = certHomeUrl();
+      const src = "/qr.svg?u=" + encodeURIComponent(home);
+      if (qrEl.getAttribute("src") === src && qrEl.complete) {
+        goPrint();
+        return;
+      }
+      qrEl.onload = () => goPrint();
+      qrEl.onerror = () => goPrint();
+      qrEl.src = src;
+    }
+    function runLookupApp() {
+      document.body.classList.add("lookup");
+      applyView();
+      const form = document.getElementById("lookupForm");
+      const statusEl = document.getElementById("lookupStatus");
+      const courseEl = document.getElementById("lookupCourse");
+      fetch("/api/courses", { cache: "no-store" }).then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        const courses = data.courses || [];
+        if (!courseEl || !courses.length) return;
+        const current = courseEl.value;
+        courseEl.innerHTML = courses.map((c) =>
+          `<option value="${c.id}"${c.id === current ? " selected" : ""}>${c.title}</option>`
+        ).join("");
+      }).catch(() => { /* keep the COPD option */ });
+      if (!form) return;
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        const name = (form.name.value || "").trim();
+        const esr = (form.esr.value || "").replace(/[^A-Za-z0-9]/g, "");
+        const course = courseEl ? courseEl.value : "copd";
+        if (name.length < 2) {
+          statusEl.textContent = "Enter the name that was on the register.";
+          return;
+        }
+        if (esr.length < 4) {
+          statusEl.textContent = "Enter your ESR number.";
+          return;
+        }
+        const btn = form.querySelector("button[type='submit']");
+        btn.disabled = true;
+        statusEl.textContent = "Searching the register…";
+        try {
+          const res = await fetch("/api/certificate/lookup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ course, name, esr })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 429) {
+            statusEl.textContent = "Too many tries. Wait a few minutes and try again.";
+            btn.disabled = false;
+            return;
+          }
+          if (res.ok && data.ok && data.name) {
+            statusEl.textContent = "Certificate found. Use Save as PDF if you want a copy.";
+            printCpdCertificate(data.name, data.date, { title: data.title, detail: data.detail });
+            btn.disabled = false;
+            return;
+          }
+          statusEl.textContent = "No certificate found for that course, name and ESR number.";
+        } catch (err) {
+          statusEl.textContent = "Could not reach the register. Try again, or use the live Hub CPD site.";
+        }
+        btn.disabled = false;
+      };
+    }
+
     if (view === "vote") {
       runVoteApp();
     } else if (view === "home") {
       document.body.classList.add("home");
       applyView();
+    } else if (view === "lookup") {
+      runLookupApp();
     } else {
       requirePresenterAccess().then((ok) => {
         if (!ok) return;
@@ -3877,28 +4225,8 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
           }
         };
       }
-      function printCertificate(name) {
-        const who = String(name || "").trim();
-        if (who.length < 2) return;
-        const nameEl = document.getElementById("cpdCertName");
-        const dateEl = document.getElementById("cpdCertDate");
-        const sheet = document.getElementById("cpdCert");
-        if (!nameEl || !dateEl || !sheet) return;
-        nameEl.textContent = who;
-        dateEl.textContent = new Date().toLocaleDateString("en-GB", {
-          weekday: "long", day: "numeric", month: "long", year: "numeric"
-        });
-        sheet.hidden = false;
-        document.body.classList.add("cert-printing");
-        const done = () => {
-          if (!document.body.classList.contains("cert-printing")) return;
-          document.body.classList.remove("cert-printing");
-          sheet.hidden = true;
-          window.removeEventListener("afterprint", done);
-        };
-        window.addEventListener("afterprint", done);
-        window.setTimeout(done, 2500);
-        window.setTimeout(() => window.print(), 50);
+      function printCertificate(name, when, course) {
+        printCpdCertificate(name, when, course);
       }
       function draw(poll) {
         if (arguments.length) hub.poll = poll;

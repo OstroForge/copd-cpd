@@ -56,6 +56,16 @@ OD_UA = (
     "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 )
 _OD: dict = {}
+_LOOKUP_HITS: dict[str, list[float]] = {}
+_ATTEND_CACHE: dict = {"at": 0.0, "prefix": "", "rows": []}
+COURSES = {
+    "copd": {
+        "id": "copd",
+        "title": "COPD, Type 2 Respiratory Failure and NEWS2",
+        "detail": "JRCALC Chronic Obstructive Pulmonary Disease (G0390) · 30 minutes",
+        "prefix": "COPD-CPD-attendance-",
+    }
+}
 
 
 def _usable_lan_ip(ip: str) -> bool:
@@ -275,6 +285,7 @@ class Room:
         self.session_name = ""
         self.session_cloud = False
         self.session_url = ""
+        self.bound = False
         self.touched = time.monotonic()
 
     def cert_path(self) -> Path:
@@ -301,16 +312,19 @@ def get_room(rid: str, create: bool = False) -> Room | None:
     if rid and rid in ROOMS:
         room = ROOMS[rid]
         room.touched = time.monotonic()
+        attach_session(room)
         return room
     if not create:
         return None
     if rid and re.fullmatch(r"[A-Z0-9]{4,8}", rid):
         room = Room(rid)
         ROOMS[rid] = room
+        attach_session(room)
         return room
     fresh = new_room_id()
     room = Room(fresh)
     ROOMS[fresh] = room
+    attach_session(room)
     return room
 
 
@@ -377,8 +391,6 @@ def attend_config() -> tuple[str, Path | None]:
         share = chosen["share"] or fallback["share"] or other["share"]
         if not folder_raw:
             folder_raw = chosen["folder"] or fallback["folder"] or other["folder"]
-    if share:
-        return share, None
     if not folder_raw:
         folder_raw = str(Path.home() / "OneDrive" / "Documents" / "Hub CPD attendance")
     path = Path(folder_raw) if folder_raw else None
@@ -398,6 +410,114 @@ def session_filename(presenter: str = "", room_id: str = "") -> str:
     if code:
         return "COPD-CPD-attendance-{}-{}-{}.csv".format(stamp, person, code)
     return "COPD-CPD-attendance-{}-{}.csv".format(stamp, person)
+
+
+def session_bind_path(rid: str) -> Path:
+    return ROOT / ("session-{}.json".format(rid.lower()))
+
+
+def save_session_bind(room: Room) -> None:
+    payload = {
+        "id": room.id,
+        "name": room.session_name,
+        "cloud": room.session_cloud,
+        "url": room.session_url,
+        "file": str(room.session_file) if room.session_file else "",
+    }
+    try:
+        session_bind_path(room.id).write_text(json.dumps(payload), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def latest_attendance_file(room_id: str) -> Path | None:
+    code = re.sub(r"[^A-Z0-9]", "", (room_id or "").upper())[:8]
+    if not code:
+        return None
+    suffix = "-{}.csv".format(code)
+    _share, folder = attend_config()
+    roots = [ROOT, ROOT / "certificates", ROOT / "certificates" / "dev", ROOT / "certificates" / "live"]
+    if folder is not None:
+        roots.append(folder)
+    found: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in root.glob("COPD-CPD-attendance-*" + suffix):
+            key = str(path.resolve()) if path.exists() else str(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            found.append(path)
+    if not found:
+        return None
+    return max(found, key=lambda path: path.stat().st_mtime if path.exists() else 0)
+
+
+def load_room_names(room: Room) -> None:
+    path = room.cert_path()
+    if not path.is_file():
+        return
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError:
+        return
+    try:
+        reader = csv.DictReader(io.StringIO(text))
+    except csv.Error:
+        return
+    for row in reader:
+        voter = str(row.get("voter") or "").strip()[:80]
+        name = clean_name(row.get("name"))
+        esr = clean_esr(row.get("esr"))
+        email = clean_email(row.get("email"))
+        at = str(row.get("submitted_at") or "").strip()
+        if not voter or len(name) < 2:
+            continue
+        room.names[voter] = {"name": name, "esr": esr, "email": email, "at": at}
+
+
+def restore_room_session(room: Room) -> None:
+    if not room.session_name:
+        path = session_bind_path(room.id)
+        data = {}
+        if path.is_file():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError, TypeError):
+                data = {}
+        name = str(data.get("name") or "")
+        if name:
+            room.session_name = name
+            room.session_cloud = bool(data.get("cloud"))
+            room.session_url = str(data.get("url") or "")
+            file_raw = str(data.get("file") or "")
+            if file_raw:
+                room.session_file = Path(file_raw)
+        else:
+            found = latest_attendance_file(room.id)
+            if found is not None:
+                room.session_name = found.name
+                room.session_file = found
+    if not room.names:
+        load_room_names(room)
+
+
+def attach_session(room: Room) -> None:
+    if room.bound:
+        return
+    restore_room_session(room)
+    room.bound = True
+    if room.names and room.session_name:
+        threading.Thread(target=_flush_session, args=(room,), daemon=True).start()
+
+
+def _flush_session(room: Room) -> None:
+    try:
+        save_names(room)
+    except OSError as err:
+        print("Attendance flush: {}".format(err), flush=True)
 
 
 def filename_person(raw: str) -> str:
@@ -588,7 +708,7 @@ def od_put(session: dict, filename: str, content: bytes) -> None:
     raise OSError("OneDrive upload failed")
 
 
-def od_upload(filename: str, content: bytes) -> dict:
+def get_od_session() -> dict:
     share, _folder = attend_config()
     if not share:
         raise OSError("No OneDrive folder link is configured")
@@ -603,14 +723,20 @@ def od_upload(filename: str, content: bytes) -> dict:
     ):
         session = od_connect(share)
         _OD = session
+    return session
+
+
+def od_upload(filename: str, content: bytes) -> dict:
+    session = get_od_session()
     try:
         od_put(session, filename, content)
     except OSError:
-        session = od_connect(share)
+        session = od_connect(attend_config()[0])
+        global _OD
         _OD = session
         od_put(session, filename, content)
     if filename not in od_list_names(session):
-        session = od_connect(share)
+        session = od_connect(attend_config()[0])
         _OD = session
         od_put(session, filename, content)
         if filename not in od_list_names(session):
@@ -695,6 +821,138 @@ def names_human_csv(room: Room) -> bytes:
     return buf.getvalue().encode("utf-8-sig")
 
 
+def public_courses() -> list[dict]:
+    return [
+        {"id": c["id"], "title": c["title"], "detail": c["detail"]}
+        for c in COURSES.values()
+    ]
+
+
+def name_key(raw: object) -> str:
+    return " ".join(clean_name(raw).casefold().split())
+
+
+def file_session_date(filename: str) -> str:
+    match = re.search(r"(\d{4}-\d{2}-\d{2})", filename or "")
+    return match.group(1) if match else ""
+
+
+def parse_attendance_csv(body: bytes, fallback_date: str = "") -> list[dict]:
+    text = body.decode("utf-8-sig", errors="replace")
+    rows = []
+    try:
+        reader = csv.DictReader(io.StringIO(text))
+    except csv.Error:
+        return rows
+    fields = {str(name or "").strip().casefold(): str(name or "") for name in (reader.fieldnames or [])}
+    name_field = fields.get("name")
+    esr_field = fields.get("esr")
+    at_field = fields.get("submitted_at") or fields.get("at")
+    if not name_field:
+        return rows
+    for row in reader:
+        who = clean_name(row.get(name_field))
+        esr = clean_esr(row.get(esr_field) if esr_field else "")
+        if len(who) < 2 or len(esr) < 4:
+            continue
+        when = str(row.get(at_field) or "").strip() if at_field else ""
+        rows.append({"name": who, "esr": esr, "at": when or fallback_date})
+    return rows
+
+
+def local_attendance_files(prefix: str) -> list[Path]:
+    _share, folder = attend_config()
+    roots = [ROOT, ROOT / "certificates"]
+    if folder is not None:
+        roots.append(folder)
+    found: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        if not root.is_dir():
+            continue
+        for path in root.glob(prefix + "*.csv"):
+            key = str(path.resolve()) if path.exists() else str(path)
+            if key in seen:
+                continue
+            seen.add(key)
+            found.append(path)
+    return found
+
+
+def collect_attendance_rows(prefix: str) -> list[dict]:
+    now = time.monotonic()
+    cached = _ATTEND_CACHE
+    if cached.get("prefix") == prefix and now - float(cached.get("at") or 0) < 45:
+        return list(cached.get("rows") or [])
+    rows: list[dict] = []
+    with LOCK:
+        for room in ROOMS.values():
+            for rec in room.names.values():
+                who = clean_name(rec.get("name"))
+                esr = clean_esr(rec.get("esr"))
+                if len(who) < 2 or len(esr) < 4:
+                    continue
+                rows.append({"name": who, "esr": esr, "at": rec.get("at") or ""})
+    for path in local_attendance_files(prefix):
+        try:
+            rows.extend(parse_attendance_csv(path.read_bytes(), file_session_date(path.name)))
+        except OSError:
+            continue
+    try:
+        session = get_od_session()
+        names = sorted(
+            n for n in od_list_names(session) if n.startswith(prefix) and n.lower().endswith(".csv")
+        )
+        for filename in names[:200]:
+            try:
+                rows.extend(parse_attendance_csv(od_download(session, filename), file_session_date(filename)))
+            except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError):
+                continue
+    except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
+        print("Certificate lookup OneDrive: {}".format(err), flush=True)
+    _ATTEND_CACHE.update({"at": now, "prefix": prefix, "rows": rows})
+    return rows
+
+
+def lookup_client(handler: SimpleHTTPRequestHandler) -> str:
+    forwarded = (handler.headers.get("X-Forwarded-For") or "").split(",")[0].strip()
+    return forwarded or handler.client_address[0]
+
+
+def lookup_allowed(ip: str) -> bool:
+    now = time.monotonic()
+    hits = [stamp for stamp in _LOOKUP_HITS.get(ip, []) if now - stamp < 600]
+    if len(hits) >= 20:
+        _LOOKUP_HITS[ip] = hits
+        return False
+    hits.append(now)
+    _LOOKUP_HITS[ip] = hits
+    return True
+
+
+def find_certificate(course_id: str, name: str, esr: str) -> dict | None:
+    course = COURSES.get(course_id)
+    if not course:
+        return None
+    want_name = name_key(name)
+    want_esr = clean_esr(esr)
+    if len(want_name) < 2 or len(want_esr) < 4:
+        return None
+    matched = [
+        row for row in collect_attendance_rows(course["prefix"])
+        if name_key(row.get("name")) == want_name and clean_esr(row.get("esr")) == want_esr
+    ]
+    if not matched:
+        return None
+    best = max(matched, key=lambda row: str(row.get("at") or ""))
+    return {
+        "name": best["name"],
+        "date": best.get("at") or "",
+        "title": course["title"],
+        "detail": course["detail"],
+    }
+
+
 def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str]:
     lead = clean_name(presenter)
     if len(lead) < 2:
@@ -703,16 +961,12 @@ def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str
     if not share and folder is None:
         return None, "No OneDrive folder is configured. Keep the folder share in attend-folder.txt, or set ATTEND_SHARE_URL."
     with LOCK:
-        room.names.clear()
-        try:
-            room.cert_path().unlink(missing_ok=True)
-        except OSError:
-            pass
         name = session_filename(lead, room.id)
         room.session_name = name
         room.session_cloud = False
-        room.session_file = None
+        room.session_file = folder / name if folder is not None else None
         room.session_url = ""
+        room.bound = True
         body = names_human_csv(room)
     if share:
         try:
@@ -721,6 +975,12 @@ def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str
             with LOCK:
                 room.session_cloud = True
                 room.session_url = web
+            if folder is not None:
+                try:
+                    write_local_bytes(folder / name, body)
+                except OSError:
+                    pass
+            save_session_bind(room)
             print("Attendance file [{}]: {}".format(room.id, name), flush=True)
             return name, ""
         except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
@@ -734,6 +994,7 @@ def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str
         return None, "Could not create the attendance file."
     with LOCK:
         room.session_file = written
+    save_session_bind(room)
     print("Attendance file [{}]: {}".format(room.id, written), flush=True)
     return name, ""
 
@@ -744,6 +1005,8 @@ def write_human_csv(room: Room, path: Path) -> None:
 
 
 def save_names(room: Room) -> None:
+    _ATTEND_CACHE["at"] = 0
+    restore_room_session(room)
     buf = io.StringIO()
     writer = csv.DictWriter(buf, fieldnames=["submitted_at", "voter", "name", "esr", "email"])
     writer.writeheader()
@@ -762,15 +1025,24 @@ def save_names(room: Room) -> None:
             od_upload(room.session_name, names_human_csv(room))
         except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
             print("OneDrive upload: {}".format(err), flush=True)
+        else:
+            save_session_bind(room)
+        if folder is not None:
+            try:
+                write_human_csv(room, folder / room.session_name)
+            except OSError:
+                pass
         return
-    if room.session_file is not None:
+    if share and not room.session_name:
+        print("Certificate name kept, but no OneDrive file is bound for [{}]. Click Start session.".format(room.id), flush=True)
+        return
+    target = room.session_file
+    if target is None and room.session_name and folder is not None:
+        target = folder / room.session_name
+    if target is not None:
         try:
-            write_human_csv(room, room.session_file)
-        except OSError:
-            pass
-    elif room.session_name and folder is not None:
-        try:
-            write_human_csv(room, folder / room.session_name)
+            write_human_csv(room, target)
+            save_session_bind(room)
         except OSError:
             pass
 
@@ -1100,6 +1372,15 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return
+        if path in ("/lookup", "/lookup/", "/certificate"):
+            self.send_response(302)
+            self.send_header("Location", "/?view=lookup")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            return
+        if path == "/api/courses":
+            send_json(self, {"ok": True, "courses": public_courses()})
+            return
         if path == "/healthz":
             send_json(self, {"ok": True})
             return
@@ -1188,6 +1469,22 @@ class Handler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
         data = read_json(self)
+        if path == "/api/certificate/lookup":
+            if not lookup_allowed(lookup_client(self)):
+                send_json(self, {"ok": False, "error": "try later"}, 429)
+                return
+            course = str(data.get("course") or "copd").strip().casefold()
+            name = clean_name(data.get("name"))
+            esr = clean_esr(data.get("esr"))
+            if len(name) < 2 or len(esr) < 4 or course not in COURSES:
+                send_json(self, {"ok": False, "error": "not found"})
+                return
+            found = find_certificate(course, name, esr)
+            if not found:
+                send_json(self, {"ok": False, "error": "not found"})
+                return
+            send_json(self, {"ok": True, **found})
+            return
         if path == "/api/certificate":
             voter = str(data.get("voter") or "").strip()[:80]
             name = clean_name(data.get("name"))
@@ -1215,12 +1512,12 @@ class Handler(SimpleHTTPRequestHandler):
                     return
                 room.names[voter] = {"name": name, "esr": esr, "email": email, "at": utc_now()}
                 at = room.names[voter]["at"]
-                try:
-                    save_names(room)
-                except OSError:
-                    pass
-                notify_name(name, at, esr, email)
-                send_json(self, {"ok": True, "poll": public_poll(room), "name": name, "esr": esr, "email": email})
+            try:
+                save_names(room)
+            except OSError:
+                pass
+            notify_name(name, at, esr, email)
+            send_json(self, {"ok": True, "poll": public_poll(room), "name": name, "esr": esr, "email": email})
             return
         if path == "/api/session/start":
             if not authorised_host(self):

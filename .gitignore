@@ -13,8 +13,8 @@ presenters.txt
 attend-folder.txt
 certificates.csv
 certificates-*.csv
-certificates/*.csv
+certificates/**/*.csv
 COPD-CPD-certificate-names.csv
-COPD-CPD-attendance-*.csv
+*-CPD-attendance-*.csv
 session-*.json
 Proposal for accreditation/

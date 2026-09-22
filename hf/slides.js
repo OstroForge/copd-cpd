@@ -81,7 +81,7 @@ function heartFailureSlides() {
       kicker: "What it is",
       title: "Heart failure in one minute",
       html: `
-        <div class="body two">
+        <div class="body two hf-signs">
           <div>
             <ul>
               <li>A clinical syndrome, not a single disease — the heart cannot meet the body’s needs, or does so at high filling pressures</li>
@@ -89,25 +89,22 @@ function heartFailureSlides() {
               <li>Valves, pericardium, rhythm and conduction can all do it</li>
               <li><strong>Chronic HF</strong> is already diagnosed and treated in the community</li>
               <li><strong>Acute on chronic</strong> is a rapid worsening of that known condition</li>
-              <li><strong>De novo</strong> is the first presentation — no previous diagnosis</li>
+              <li><strong>Heart failure de novo</strong> is the first presentation — no previous diagnosis. Write it that way.</li>
             </ul>
-          </div>
-          <div>
-            <div class="card">
-              <h3>Three major acute forms</h3>
-              <ul>
-                <li><strong>Acute pulmonary oedema</strong> — sudden interstitial oedema, severe dyspnoea, with or without swollen legs</li>
-                <li><strong>Predominant peripheral oedema</strong> — fluid-loaded: legs, abdomen, scrotum, raised JVP, pleural fluid</li>
-                <li><strong>Cardiogenic shock</strong> — 5–8% of AHF. New cases are often STEMI. Rapid treatment</li>
-              </ul>
-            </div>
-            <div class="card warn" style="margin-top:10px">
+            <div class="card warn" style="margin-top:12px">
               <h3>Pre-hospital trap</h3>
               <p>AHF is frequently mistaken for sepsis: both can collapse and look hypotensive. Fluids that would be right for sepsis can be harmful here.</p>
             </div>
           </div>
-        </div>`,
-      notes: "Do not lecture HFrEF versus HFpEF. Name the three forms. Shock is rare but it is the one that makes GTN and furosemide the wrong drugs. The sepsis trap is the line that must land."
+          <div class="hf-signs-pic">
+            <div class="photo-frame">
+              <img src="hf/assets/hf-signs.jpg" alt="Diagram of major heart failure signs: breathlessness, pulmonary oedema, pleural fluid, ascites and swollen legs">
+            </div>
+            <p class="photo-caption">Signs of heart failure. National Heart, Lung, and Blood Institute / NIH, public domain, via Wikimedia Commons.</p>
+          </div>
+        </div>
+        <div class="banner" style="margin-top:12px">Three acute forms: pulmonary oedema · peripheral oedema · cardiogenic shock (5–8%, often STEMI)</div>`,
+      notes: "Do not lecture HFrEF versus HFpEF. Use the picture: wet lungs, wet abdomen, wet legs. Name heart failure de novo in full — not just ‘de novo’. Shock is rare but it is the one that makes GTN and furosemide the wrong drugs. The sepsis trap is the line that must land."
     },
     {
       kicker: "Words you will hear",
@@ -115,62 +112,100 @@ function heartFailureSlides() {
       html: `
         <table>
           <thead>
-            <tr><th>You may hear</th><th>What it means on scene</th></tr>
+            <tr><th>You may hear</th><th>Stands for</th><th>What it means on scene</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>HFrEF / LVSD</strong></td>
+              <td><strong>HFrEF</strong></td>
+              <td>Heart Failure with reduced Ejection Fraction<br><span class="small">Also called LVSD — Left Ventricular Systolic Dysfunction</span></td>
               <td>Pumping problem. Ejection fraction under 40%. The left ventricle does not empty well.</td>
             </tr>
             <tr>
               <td><strong>HFpEF</strong></td>
+              <td>Heart Failure with preserved Ejection Fraction</td>
               <td>Filling problem. EF 50% or more. The ventricle is stiff. They can still get pulmonary oedema.</td>
             </tr>
             <tr>
               <td><strong>LVF</strong></td>
+              <td>Left Ventricular Failure</td>
               <td>Breathless, often basal crackles, pulmonary oedema. May also have right-sided signs.</td>
             </tr>
             <tr>
-              <td><strong>RVF / cor pulmonale</strong></td>
-              <td>Swollen, raised JVP, ascites, pleural fluid. Lungs often clear. Cor pulmonale is right failure from chronic lung disease.</td>
+              <td><strong>RVF</strong></td>
+              <td>Right Ventricular Failure<br><span class="small">Cor pulmonale — right failure from chronic lung disease</span></td>
+              <td>Swollen, raised JVP, ascites, pleural fluid. Lungs often clear.</td>
             </tr>
             <tr>
               <td><strong>CCF</strong></td>
+              <td>Congestive Cardiac Failure</td>
               <td>Old term. Both pulmonary and peripheral oedema — left and right.</td>
             </tr>
           </tbody>
         </table>
-        <p class="callout" style="margin-top:14px">You do not need an echo to start treatment. You do need to know if this looks like congestion, shock, or something else.</p>`,
-      notes: "Walk the table quickly. HFmrEF is a grey area — skip unless asked. Land the callout: no echo on scene, still treat what you see."
+        <p class="callout" style="margin-top:14px">Treat what you see and hear in front of you. The type of heart failure does not matter in pre-hospital care — easing the congestion and shock is what is important.</p>`,
+      notes: "Walk the table: say the words out loud so HFrEF and HFpEF stop being noise. Skip HFmrEF unless asked. Land the callout: type is a hospital label. On scene, treat congestion or shock."
     },
     {
       kicker: "Look again",
       title: "Is this heart failure — or something else?",
       html: `
-        <div class="body two">
-          <div class="card">
-            <h3>Red flags that support AHF</h3>
-            <ul>
-              <li><strong>Orthopnoea</strong> — worse lying flat; may have slept in the chair</li>
-              <li><strong>PND</strong> — wakes gasping, better sitting up</li>
-              <li>New dyspnoea with previous MI, hypertension or angina</li>
-              <li>New peripheral oedema with breathlessness</li>
-              <li>Pink frothy sputum</li>
-              <li>Fine basal crackles, often with an expiratory wheeze</li>
-            </ul>
-          </div>
-          <div class="card myth">
-            <h3>Think again if you find</h3>
-            <ul class="think-again">
-              <li><span>Fever, focal chest signs, productive green sputum</span><em>Pneumonia</em></li>
-              <li><span>Wheeze, smoker, known COPD, no orthopnoea</span><em>COPD flare</em></li>
-              <li><span>Sudden pleuritic pain, unilateral signs, risk for clot</span><em>PE / pneumothorax</em></li>
-              <li><span>Collapse, fever, warm shock, no congestion</span><em>Sepsis</em></li>
-              <li><span>Normal 12-lead ECG</span><em>AHF is unlikely — reconsider</em></li>
-            </ul>
-          </div>
-        </div>`,
-      notes: "Left box is JRCALC red flags. Right box: JRCALC says pulmonary oedema is hard to separate from COPD, PE and pneumonia. A normal ECG is unusual in HF — that is in the guideline, not a guess."
+        <table class="hf-diff">
+          <thead>
+            <tr>
+              <th>Condition</th>
+              <th>Symptoms</th>
+              <th>Signs</th>
+              <th>Auscultation or audible sounds</th>
+              <th>History</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="ahf">
+              <td><strong>AHF</strong></td>
+              <td>Dyspnoea, worse lying flat. Orthopnoea, paroxysmal nocturnal dyspnoea (PND). Pink or white frothy sputum</td>
+              <td>Peripheral oedema, raised JVP, tachycardia</td>
+              <td>Fine basal crackles. Wheeze. Murmur if present</td>
+              <td>IHD, hypertension, previous MI, known HF</td>
+            </tr>
+            <tr class="copd">
+              <td><strong>COPD</strong></td>
+              <td>Worse breathlessness and cough over days. More sputum than usual</td>
+              <td>Pursed lips, barrel chest, accessory muscles. No new oedema</td>
+              <td>Wheeze, poor air entry</td>
+              <td>Likely known COPD, smoker, usually 35+</td>
+            </tr>
+            <tr class="asthma">
+              <td><strong>Asthma</strong></td>
+              <td>Acute dyspnoea, cough. Cannot finish sentences</td>
+              <td>Tachypnoea, tachycardia, accessory muscles. Peak flow down</td>
+              <td>Expiratory wheeze. Silent chest if severe</td>
+              <td>Previous asthma, inhaler surge, allergen</td>
+            </tr>
+            <tr class="infection">
+              <td><strong>Chest infection</strong></td>
+              <td>Dyspnoea, fever, cough. Green or yellow sputum</td>
+              <td>Fever, tachycardia, unwell over days</td>
+              <td>Focal crackles or rhonchi</td>
+              <td>Recent infection. Smoking</td>
+            </tr>
+            <tr class="pe">
+              <td><strong>PE</strong></td>
+              <td>Sudden dyspnoea. Pleuritic pain, cough, maybe haemoptysis or leg pain</td>
+              <td>Tachycardia, tachypnoea. Hypoxia out of proportion</td>
+              <td>Often a clear chest, or focal crackles</td>
+              <td>Immobility, recent surgery, previous clot, cancer, pregnancy</td>
+            </tr>
+            <tr class="acs">
+              <td><strong>ACS</strong></td>
+              <td>Breathlessness — may be the only symptom. Chest pain, nausea, sweat</td>
+              <td>Pale, clammy. 12-lead may show ACS</td>
+              <td>Often clear unless AHF as well</td>
+              <td>IHD, previous MI, diabetes, cardiac risk</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="banner build hf-diff-punch">If the ECG shows ACS, this is an ACS job as well.</div>`,
+      notes: "This is the JRCALC Dyspnoea split — do not quote a guideline code. Walk AHF first, then the five that mimic it. Orthopnoea supports AHF but COPD often cannot lie flat either. Cardiac wheeze in older people is not asthma. Pneumonia can trigger decompensation. ACS may have no chest pain. Land the banner: overlap is expected; the 12-lead still matters."
     },
     {
       kicker: "Why they look like this",
@@ -181,7 +216,7 @@ function heartFailureSlides() {
             <h3>Left — into the lungs</h3>
             <p>Poor left ventricular contraction. Blood backs into the pulmonary veins. Hydrostatic pressure pushes fluid into the alveoli.</p>
             <ul>
-              <li>Severe dyspnoea, orthopnoea, PND</li>
+              <li>Severe dyspnoea, orthopnoea, paroxysmal nocturnal dyspnoea (PND)</li>
               <li>Pink or white frothy sputum</li>
               <li>Basal crackles ± wheeze</li>
               <li>Hypoxia</li>
@@ -202,18 +237,47 @@ function heartFailureSlides() {
       notes: "Keep this physiological and short. Left = wet lungs. Right = wet body. JVP is useful but JRCALC says it is hard pre-hospital and must not delay treatment."
     },
     {
+      kicker: "What congestion looks like",
+      title: "The film you will not have — and the signs you may",
+      html: `
+        <div class="body pic-strip">
+          <figure data-zoom="1">
+            <div class="photo-frame" style="height:min(250px,32vh);background:#111">
+              <img src="hf/assets/hf-cxr-chf.jpg" alt="Chest X-ray labelled with pleural effusion, Kerley B lines, upper-lobe blood diversion and an enlarged heart">
+            </div>
+            <p class="photo-caption">Mikael Häggström, MD, CC0, via Wikimedia Commons.</p>
+            <p class="pic-teach">The heart is large. High left atrial pressure fills the upper lung veins first (upper-lobe diversion). Kerley B lines are interstitial oedema at the bases. Fluid has also spilled into the pleural space.</p>
+          </figure>
+          <figure data-zoom="2">
+            <div class="photo-frame fill" style="height:min(250px,32vh)">
+              <img src="hf/assets/hf-jvp.jpg" alt="Raised jugular venous pressure in a person with heart failure, arrow marking the external jugular vein" style="object-position:center 35%">
+            </div>
+            <p class="photo-caption">James Heilman, MD, CC BY-SA 3.0. Arrow: external jugular.</p>
+            <p class="pic-teach">If they will sit at about 45°, look at the right neck. You want a flickering venous column, not a carotid you can feel. It is high because the right heart cannot empty, so vena cava pressure stays up and the neck veins stay full.</p>
+          </figure>
+          <figure data-zoom="3">
+            <div class="photo-frame fill" style="height:min(250px,32vh)">
+              <img src="hf/assets/hf-oedema.jpg" alt="Pitting oedema of the lower leg, shown while pressure is applied and after the finger is lifted">
+            </div>
+            <p class="photo-caption">James Heilman, MD, CC BY-SA 3.0.</p>
+            <p class="pic-teach">Press for a few seconds, then lift. A dent that stays is pitting oedema — fluid that has been pushed out of the veins into the tissues.</p>
+          </figure>
+        </div>`,
+      notes: "Open with all three. Space zooms the CXR. The next Space shrinks it back into the row, then the JVP grows; same again for oedema. Space after oedema leaves the slide."
+    },
+    {
       kicker: "Why today?",
       title: "What triggered this episode?",
       html: `
         <p style="margin-bottom:10px">JRCALC: a trigger is found in about two-thirds of decompensations. Some — ischaemia and pneumonia — raise mortality. You may be treating two conditions at once.</p>
-        <div class="diagram-row" style="margin-top:0">
-          <div class="step red"><h3>Heart</h3><p>MI / ACS<br>Tachyarrhythmia (AF, VT)<br>Bradyarrhythmia<br>Uncontrolled BP</p></div>
-          <div class="step gold"><h3>Lungs and infection</h3><p>Pneumonia<br>COPD flare<br>Pulmonary embolism<br>Sepsis</p></div>
-          <div class="step green"><h3>Drugs and lifestyle</h3><p>Missed HF medicines<br>NSAIDs, steroids<br>Alcohol / recreational drugs<br>Cardiotoxic chemo</p></div>
-          <div class="step dark"><h3>Also consider</h3><p>Chest trauma<br>Valve failure / endocarditis<br>Aortic dissection<br>LVAD if they have one</p></div>
+        <div class="diagram-row quad" style="margin-top:0">
+          <div class="step red pic-heart"><h3 class="build">Heart</h3><p class="build">MI / ACS<br>Tachyarrhythmia (AF, VT)<br>Bradyarrhythmia<br>Uncontrolled BP</p></div>
+          <div class="step gold pic-lungs"><h3 class="build">Lungs and infection</h3><p class="build">Pneumonia<br>COPD flare<br>Pulmonary embolism<br>Sepsis</p></div>
+          <div class="step green pic-pills"><h3 class="build">Drugs and lifestyle</h3><p class="build">Missed HF medicines<br>NSAIDs, steroids<br>Alcohol / recreational drugs<br>Cardiotoxic chemo</p></div>
+          <div class="step dark pic-also"><h3 class="build">Also consider</h3><p class="build">Chest trauma<br>Valve failure / endocarditis<br>Aortic dissection<br>LVAD if they have one</p></div>
         </div>
-        <p class="callout build" style="margin-top:14px">If the ECG shows ACS, this is an ACS job as well as a heart-failure job. Follow Acute Coronary Syndrome.</p>`,
-      notes: "People like a list. Hit ischaemia and infection as the dangerous pair. Space for the ACS callout. Ask: ‘Have they been taking their tablets? Any NSAIDs for a bad knee?’"
+        <p class="callout build hold-space" style="margin-top:14px">If the ECG shows ACS, this is an ACS job as well as a heart-failure job. Follow Acute Coronary Syndrome.</p>`,
+      notes: "Four empty boxes. Space: Heart. Space: the list. Space: Lungs. Space: that list. Same for drugs, then also-consider. Last Space is the ACS callout."
     },
     {
       kicker: "The dangerous habit",
@@ -242,39 +306,56 @@ function heartFailureSlides() {
       notes: "This is a key-point sentence in JRCALC. Read the red banner. Then the sepsis mix-up. Do not ban every millilitre — ban unthinking wide-open fluids in known HF."
     },
     {
-      kicker: "The intervention you already have",
-      title: "Sit them fully upright — immediately",
+      kicker: "The easiest and most important intervention you can do",
+      title: "Sit them fully upright — IMMEDIATELY",
       html: `
-        <div class="body two">
-          <div class="card ok">
-            <h3>Why this is treatment</h3>
-            <ul>
-              <li>Lowers left atrial pressure — the driving pressure for pulmonary oedema</li>
-              <li>Drops the diaphragm, so the lung bases can open</li>
-              <li>Lets them use accessory muscles</li>
-              <li>JRCALC: the importance of positioning cannot be overstated</li>
-            </ul>
+        <div class="body two hf-upright">
+          <div class="hf-upright-copy">
+            <div class="card ok">
+              <h3>Why this is treatment</h3>
+              <ul>
+                <li>Lowers left atrial pressure — the driving pressure for pulmonary oedema</li>
+                <li>Drops the diaphragm, so the lung bases can open</li>
+                <li>Lets them use accessory muscles</li>
+                <li>JRCALC: the importance of positioning cannot be overstated</li>
+              </ul>
+            </div>
+            <div class="card warn">
+              <h3>They will slump</h3>
+              <ul>
+                <li>Exhausted patients slide down the trolley</li>
+                <li>Reposition repeatedly on scene and en route</li>
+                <li>Do not lay them flat for a 12-lead if they decompensate the moment they go down — sit them, record what you can, document why</li>
+              </ul>
+            </div>
           </div>
-          <div class="card warn">
-            <h3>They will slump</h3>
-            <ul>
-              <li>Exhausted patients slide down the trolley</li>
-              <li>Reposition repeatedly on scene and en route</li>
-              <li>Do not lay them flat for a 12-lead if they decompensate the moment they go down — sit them, record what you can, document why</li>
-            </ul>
-          </div>
+          <figure class="hf-upright-pic">
+            <div class="photo-frame">
+              <img src="hf/assets/hf-sit-upright.png?v=11" alt="Older patient in a navy T-shirt sitting fully upright on a yellow ambulance trolley with a white sheet, oxygen mask with a white Venturi fitting and tubing">
+            </div>
+          </figure>
         </div>
-        <div class="banner build" style="margin-top:12px">Upright first. Then oxygen, ECG and drugs.</div>`,
+        <div class="banner build" style="margin-top:12px">First sit them upright, then oxygen, ECG and further medications</div>`,
       notes: "This is free, immediate, and often skipped while people reach for GTN. If they are peri-arrest and need to be laid for CPR, that overrides — but the breathless congested patient should not be recumbent."
     },
     {
       kicker: "On-scene map",
-      title: "Congestion with a pulse — or cardiogenic shock?",
+      title: "Congestion — or cardiogenic shock?",
       html: `
-        <div class="card" style="margin-bottom:12px;text-align:center">
+        <div class="card" style="margin-bottom:10px;text-align:center">
           <p style="font-size:22px;font-weight:750;color:var(--navy);margin:0">Breathless. Wet lungs or wet legs. Known or suspected heart failure.</p>
         </div>
         <p style="text-align:center;font-weight:750;margin:0 0 10px;font-size:22px;color:var(--navy)">Are they hypotensive or hypoperfused?</p>
+        <div class="diagram-row two hf-shock-defs">
+          <div class="card">
+            <h3>Hypotensive</h3>
+            <p>Systolic BP under <strong>110 mmHg</strong> — the Heart Failure line — or they look hypotensive: collapsing, dizzy, weak.</p>
+          </div>
+          <div class="card">
+            <h3>Hypoperfused</h3>
+            <p>The tissues are not being supplied. Cool, clammy, delayed CRT, confused, mottled, weak pulses. The BP can still look “not too bad”.</p>
+          </div>
+        </div>
         <div class="diagram-row two">
           <div class="step red">
             <h3>YES — treat as shock</h3>
@@ -291,7 +372,6 @@ function heartFailureSlides() {
               <li>Sit fully upright. Oxygen 94–98%</li>
               <li>GTN only if ischaemia or uncontrolled hypertension, and SBP &gt;110</li>
               <li>Consider furosemide 40 mg slow IV</li>
-              <li>CPAP if you have it and you are trained</li>
             </ul>
           </div>
         </div>
@@ -299,7 +379,7 @@ function heartFailureSlides() {
             <h3>Both paths</h3>
             <p>12-lead. Ask about a care plan or DNACPR. Still TIME-CRITICAL unless a palliative plan says otherwise.</p>
           </div>`,
-      notes: "Scene first, then the split. Left path is the 5–8%. Right path is most of the room’s jobs. Navy bar: both still get ECG and a proper receiving hospital."
+      notes: "Do not say ‘congestion with a pulse’ — it does not land. The split is: congested but the pressure is holding, versus cardiogenic shock (hypotensive or hypoperfused). Read the two definitions. Left path is the 5–8%. Right path is most of the room’s jobs. Navy bar: both still get ECG and a proper receiving hospital."
     },
     {
       kicker: "Oxygen and ECG",
@@ -362,27 +442,41 @@ function heartFailureSlides() {
       pollId: "hf-gtn",
       kicker: "Your turn  ·  live vote",
       title: "Would you give GTN?",
-      prompt: "72, known heart failure. Slept in the chair. Pink frothy sputum, crackles, chest pain. SBP <strong>168</strong>, HR 108, SpO<sub>2</sub> 90% on air.",
-      votePrompt: "72, known heart failure, slept in the chair, pink frothy sputum, chest pain, SBP 168. Give GTN?",
+      prompt: "72, known heart failure. Slept in the chair. Pink frothy sputum, crackles, <strong>chest pain</strong>. SBP <strong>168</strong>, HR 50, SpO<sub>2</sub> 90% on air. 12-lead as shown.",
+      votePrompt: "72, known heart failure, pink frothy sputum, chest pain, SBP 168, 12-lead as shown. Give GTN?",
+      detail: `
+        <figure class="poll-ecg">
+          <div class="photo-frame">
+            <img src="hf/assets/hf-gtn-ecg.png" alt="12-lead ECG at 50 per minute showing ST depression and T-wave inversion, without ST elevation">
+          </div>
+        </figure>
+        <div class="photo-frame cutout shock-zoll">
+          <img src="hf/assets/hf-gtn-monitor.png?v=2" alt="Zoll monitor showing pulse 50, blood pressure 168 over 96, MAP 120, respiratory rate 28, SpO2 90 percent on air">
+        </div>`,
       options: [
-        "Yes — AHF with ischaemia and uncontrolled hypertension, SBP over 110",
+        "Yes — 12-lead ischaemia and SBP over 110",
         "No — wait until hospital for nitrates",
         "No — SBP must be over 180"
       ],
       correct: 0,
-      teach: "<strong>Yes.</strong> This is acute pulmonary oedema with chest pain (ischaemia) and a high BP. Both GTN gates are open. Sit fully upright, oxygen to 94–98%, GTN 400–800 micrograms, 12-lead, TIME-CRITICAL. Furosemide can be considered. This is not a ‘wait for hospital’ job.",
-      notes: "This is the textbook congested-and-hypertensive job. If the room votes no, they have over-learned the ‘do not routinely give nitrates’ NICE hospital line. Pre-hospital JRCALC still considers GTN here."
+      teach: "<strong>Yes.</strong> There is global T wave inversion (ischaemic changes), patient has chest pain, blood pressure 168 systolic so there is no reason to withhold GTN. Sit fully upright, titrate for saturations 94–98%, GTN 400–800 mcg. <strong>Time critical transfer</strong>. Consider furosemide.",
+      notes: "Point at the inverted T waves first. That is how we know there is ischaemia — not tombstone elevation. If someone says Wellens, agree: T inversion, not a PPCI STEMI. Rhythm is about 50 — six large squares. Then the Zoll: 50 and 168. Hypertension alone would still open GTN."
     },
     {
       type: "poll",
       pollId: "hf-shock",
       kicker: "Your turn  ·  live vote",
       title: "Same lungs, different blood pressure",
-      prompt: "68, known heart failure. Pale, sweaty, barely responding. Crackles throughout. SBP <strong>86</strong>, HR 128, SpO<sub>2</sub> 80%.",
-      votePrompt: "68, known HF, shocked, crackles, SBP 86. GTN and furosemide?",
+      prompt: "68, known heart failure. Pale, sweaty, barely responding. Crackles throughout. SBP <strong>86</strong>, HR 128, SpO<sub>2</sub> 80%. 12-lead as shown.",
+      votePrompt: "68, known HF, shocked, crackles, SBP 86, 12-lead as shown. GTN and furosemide?",
       detail: `
+        <figure class="poll-ecg">
+          <div class="photo-frame">
+            <img src="hf/assets/hf-shock-ecg.png?v=3" alt="12-lead ECG at 128 per minute showing ST depression and T-wave inversion, without ST elevation">
+          </div>
+        </figure>
         <div class="photo-frame cutout shock-zoll">
-          <img src="assets/patient-shock-monitor.png" alt="Zoll monitor showing pulse 128, blood pressure 86 over 50, MAP 62, respiratory rate 32, SpO2 80 percent">
+          <img src="hf/assets/patient-shock-monitor.png" alt="Zoll monitor showing pulse 128, blood pressure 86 over 50, MAP 62, respiratory rate 32, SpO2 80 percent">
         </div>`,
       options: [
         "GTN and furosemide — it is still LVF",
@@ -390,8 +484,8 @@ function heartFailureSlides() {
         "Neither — this is cardiogenic shock"
       ],
       correct: 2,
-      teach: "<strong>Neither.</strong> SBP 86 is below the GTN line. Furosemide is contraindicated in cardiogenic shock. Sit up if they tolerate it, high-concentration oxygen, 12-lead (often STEMI), TIME-CRITICAL. Fluids are not the reflex here either.",
-      notes: "Use the Zoll. People will still reach for GTN because the chest is wet. The blood pressure decides."
+      teach: "<strong>Neither.</strong> SBP 86 is below the GTN line. Furosemide is contraindicated in cardiogenic shock. Sit up if they tolerate it, high-concentration oxygen. The 12-lead is ischaemic — T-wave inversion and ST depression, not ST elevation. TIME-CRITICAL. Caution must be noted regarding giving IV fluids for heart failure",
+      notes: "Zoll is 128 — the 12-lead is the same rate. Point at the inverted T waves and ST depression, not elevation. People will still reach for GTN because the chest is wet. The blood pressure decides: 86 is below the line."
     },
     {
       kicker: "Furosemide",
@@ -418,8 +512,29 @@ function heartFailureSlides() {
             </ul>
           </div>
         </div>
+        <div class="card build hf-oedema-diff" style="margin-top:12px">
+          <h3>Pulmonary oedema is not the same as peripheral oedema</h3>
+          <div class="hf-oedema-diff-grid">
+            <div>
+              <p><strong>Pulmonary — fluid in the lungs</strong></p>
+              <ul>
+                <li>Left heart backing up into the alveoli</li>
+                <li>Orthopnoea, crackles, frothy sputum, hypoxia</li>
+                <li><strong>This is the furosemide indication</strong></li>
+              </ul>
+            </div>
+            <div>
+              <p><strong>Peripheral — fluid in the tissues</strong></p>
+              <ul>
+                <li>Right heart backing up into the body</li>
+                <li>Pitting ankles, sacrum, raised JVP, ascites — lungs may be clear</li>
+                <li><strong>Swollen legs alone is not the indication</strong></li>
+              </ul>
+            </div>
+          </div>
+        </div>
         <p class="callout" style="margin-top:12px">Known chronic HF: look at the care plan. Extra oral diuretic may be the plan if they are staying at home. If they need active management, do not delay hospital for a community call.</p>`,
-      notes: "Furosemide is ‘consider’, 40 mg once, slow IV. Not the old ‘80 and a second amp’. Shock is a hard stop. Care-plan oral diuretic is for the stable known patient, not the drowning one."
+      notes: "Open on the two boxes as before — consider 40 mg, not in shock. Space: pulmonary vs peripheral. People give furosemide for ankles; that is the habit. Wet lungs are the indication, not wet legs. Care-plan oral diuretic is for the stable known patient, not the drowning one."
     },
     {
       kicker: "What not to reach for",
@@ -439,32 +554,6 @@ function heartFailureSlides() {
         </div>
         <div class="banner dark build" style="margin-top:12px">The old LVF pack of GTN + furosemide + morphine is not the current guideline</div>`,
       notes: "Kill the morphine-for-oedema habit. Chest pain is the exception. Salbutamol is allowed when you cannot tell — say that out loud so people do not feel trapped."
-    },
-    {
-      kicker: "CPAP",
-      title: "If you have it and you are trained, start it early",
-      html: `
-        <div class="body two">
-          <div class="card ok">
-            <h3>When JRCALC wants it considered</h3>
-            <ul>
-              <li>Respiratory distress: respiratory rate <strong>&gt;25</strong> and SpO<sub>2</sub> <strong>&lt;90%</strong></li>
-              <li>Start as soon as possible</li>
-              <li>Only where the equipment is available and you are suitably trained</li>
-            </ul>
-            <p style="margin-top:10px">It splints alveoli, pushes oedema back into the capillaries, and the higher intrathoracic pressure reduces venous return.</p>
-          </div>
-          <div class="card">
-            <h3>Why it is in the guideline</h3>
-            <ul>
-              <li>Trials: CPAP improves survival to discharge and cuts intubation</li>
-              <li>Pre-hospital review: CPAP is the NIV that helps mortality and intubation versus standard care</li>
-              <li>BiPAP’s effect on those outcomes was uncertain</li>
-            </ul>
-            <p class="small" style="margin-top:10px">If you do not carry CPAP, you have not failed the job. Sit them up, oxygen, GTN if indicated, move.</p>
-          </div>
-        </div>`,
-      notes: "Do not pretend every WMAS vehicle has CPAP. Teach the criteria so that when they work with a crew or hospital that has it, they start it instead of waiting. NICE says do not use NIV routinely in hospital — JRCALC still wants early CPAP in pre-hospital respiratory distress. Teach JRCALC for this session."
     },
     {
       kicker: "The rest of the job",
@@ -576,7 +665,7 @@ function heartFailureSlides() {
           <div class="banner teal build" style="margin-top:8px">2. Sit them fully upright first. Target 94–98% oxygen. Record a 12-lead.</div>
           <div class="banner green build" style="margin-top:8px">3. GTN: ischaemia or uncontrolled hypertension, and SBP over 110 — not the ACS 90 mmHg line.</div>
           <div class="banner dark build" style="margin-top:8px">4. STOP and THINK before IV fluids. No GTN or furosemide in cardiogenic shock.</div>
-          <div class="banner red build" style="margin-top:8px">5. Morphine is not routine. CPAP if you have it, RR &gt;25 and SpO<sub>2</sub> &lt;90%.</div>
+          <div class="banner red build" style="margin-top:8px">5. Morphine is not routine — consider it for chest pain, or if a palliative plan already includes it.</div>
         </div>`,
       notes: "Read them slowly. Space reveals each line."
     },
@@ -589,6 +678,7 @@ function heartFailureSlides() {
             <h3>Clinical guidance</h3>
             <ul>
               <li>JRCALC Plus, Heart Failure (live entry; v4.33 at the time this session was built)</li>
+              <li>JRCALC Dyspnoea — differentials for AHF, COPD, asthma, chest infection, PE and ACS</li>
               <li>JRCALC Glyceryl Trinitrate — AHF table, updated 10 December 2025</li>
               <li>JRCALC Furosemide — 40 mg slow IV, adults 18+</li>
               <li>JRCALC Oxygen — target 94–98% in AHF</li>
@@ -599,15 +689,13 @@ function heartFailureSlides() {
             <h3>Why the guideline is written this way</h3>
             <ul>
               <li>Mebazaa et al. Eur J Heart Fail 2015 — pre-hospital AHF consensus; vasodilators if SBP ≥110</li>
-              <li>NICE CG187 Acute heart failure — hospital nitrates not routine; NIV for severe dyspnoea and acidaemia</li>
+              <li>NICE CG187 Acute heart failure — hospital nitrates not routine</li>
               <li>Ponikowski et al. ESC heart failure 2016</li>
-              <li>Goodacre et al. Acad Emerg Med 2014 — pre-hospital NIV</li>
-              <li>Vital et al. Cochrane 2013 — CPAP / NIV in cardiogenic oedema</li>
               <li>Wakai et al. Cochrane 2013 — nitrates in AHF</li>
             </ul>
           </div>
         </div>
-        <p class="small" style="margin-top:12px">Teaching summary of JRCALC Plus, not a substitute for the live guideline. Recheck local PGDs, CPAP availability and stock before you treat. Diagrams in this deck are original teaching graphics, not official JRCALC artwork.</p>`,
+        <p class="small" style="margin-top:12px">Teaching summary of JRCALC Plus, not a substitute for the live guideline. Recheck local PGDs and stock before you treat. Original diagrams in this deck are teaching graphics, not official JRCALC artwork. Clinical images from Wikimedia Commons: NHLBI/NIH heart-failure signs (public domain); chest X-ray, Mikael Häggström, MD (CC0); JVP and pitting oedema, James Heilman, MD (CC BY-SA 3.0).</p>`,
       notes: "Ask staff to open Heart Failure in JRCALC Plus after the session. The GTN monograph is the one they will argue about — send them there."
     },
     {

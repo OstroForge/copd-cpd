@@ -1,6 +1,15 @@
-# COPD CPD — how to run this session
+# Hub CPD — how to run a session
 
-WMAS ambulance CPD deck on JRCALC G0390 COPD, NEWS2 Scale 1 vs Scale 2, and live room voting.
+WMAS ambulance CPD decks (COPD, Heart Failure, and later packages) with live room voting.
+
+Each topic has its own folder:
+
+| Topic | Folder |
+| --- | --- |
+| COPD | `copd/` — `slides.js`, `handout.html`, `assets/` |
+| Heart Failure | `hf/` — `slides.js`, `handout.html`, `assets/` |
+
+The hub (`index.html`, `serve.py`) stays at the top. Attendance CSVs stay under `certificates/<course>/dev` or `live`. To add a later package, copy that folder pattern.
 
 ## Local (this laptop)
 
@@ -18,7 +27,8 @@ Then open on **this laptop**:
 | Presenter / notes | http://127.0.0.1:8765/?view=presenter |
 | Audience window (share this) | http://127.0.0.1:8765/?view=audience |
 | Self-guided (no vote, no register) | http://127.0.0.1:8765/?view=self |
-| Printable handout | http://127.0.0.1:8765/handout.html |
+| Printable COPD handout | http://127.0.0.1:8765/copd/handout.html |
+| Printable Heart Failure handout | http://127.0.0.1:8765/hf/handout.html |
 
 Phones must **not** use `127.0.0.1` — that address only works on the laptop. Put the phone on the **same Wi-Fi** as the laptop (not mobile data) and open the LAN address printed in the terminal, for example:
 
@@ -72,11 +82,12 @@ Use this when you are not presenting from this laptop, or when Teams needs a pub
 | Audience window (share this) | https://hub-cpd.onrender.com/?view=audience |
 | Phone / Teams vote page | https://hub-cpd.onrender.com/v |
 | Self-guided (no vote, no register) | https://hub-cpd.onrender.com/?view=self |
-| Printable handout | https://hub-cpd.onrender.com/handout.html |
+| Printable COPD handout | https://hub-cpd.onrender.com/copd/handout.html |
+| Printable Heart Failure handout | https://hub-cpd.onrender.com/hf/handout.html |
 | Get my certificate | https://hub-cpd.onrender.com/?view=lookup |
 | Old COPD URL (forwards to Hub) | https://copd-cpd.onrender.com/ |
 | GitHub copy | https://ostroforge.github.io/copd-cpd/ |
-| GitHub handout | https://ostroforge.github.io/copd-cpd/handout.html |
+| GitHub COPD handout | https://ostroforge.github.io/copd-cpd/copd/handout.html |
 | Source code | https://github.com/OstroForge/copd-cpd |
 | Render dashboard | https://dashboard.render.com/web/srv-dalud967bikc73akh3bg |
 
@@ -128,17 +139,25 @@ Automatic copies (same names, no extra click):
 
 You can still download **certificate names** from the presenter sidebar. On Render the files are lost when the service sleeps, so also set a `CERT_WEBHOOK` environment variable if you want each name POSTed as JSON to an inbox you control.
 
-**OneDrive attendance folder:** account **jon.ski1382@gmail.com**. Files land in `Documents/Cursor Projects/CPD/COPD/certificates`. Open that folder in a browser (signed in as that account):
+**OneDrive attendance folder:** account **jon.ski1382@gmail.com**. `attend-folder.txt` still chooses **DEV** or **LIVE**. Files then go in the course folder:
 
+| Course | Local path |
+| --- | --- |
+| COPD | `certificates/copd/dev` or `certificates/copd/live` |
+| Heart Failure | `certificates/heart failure/dev` or `certificates/heart failure/live` |
+
+The parent folder (open while signed in as that account):  
 https://onedrive.live.com/my?id=%2Fpersonal%2F4a2042dbbcf48071%2FDocuments%2FCursor%20Projects%2FCPD%2FCOPD%2Fcertificates&viewid=6c1bdb91-03c5-436a-8302-197408acb301
 
-On this laptop, `attend-folder.txt` (gitignored) can list both folders. Put a `# LIVE` block and a `# DEV` block, each with the OneDrive **share** link (and optional local path). `python serve.py` uses **DEV**. Render ignores this file and uses `ATTEND_SHARE_URL` for the **LIVE** folder. Click **Start session** in presenter view — names write as `COPD-CPD-attendance-YYYY-MM-DD-HHMM-Presenter-ROOM.csv`, with columns `submitted_at`, `name`, `esr`, `email`. Do not commit that share link.
+On this laptop, `attend-folder.txt` (gitignored) keeps a `# LIVE` block and a `# DEV` block with the OneDrive **share** link (and optional local path). `python serve.py` uses **DEV**, so new files land in `certificates/<course>/dev`. Render uses `ATTEND_SHARE_URL` and writes to `certificates/<course>/live`. Do not commit that share link.
+
+To add a later package, give it a `folder` name in `COURSES` in `serve.py`. The `dev` and `live` folders are created on first **Start session**. Old files in `certificates/dev` are still found for certificate lookup.
 
 ## Handout and self-guided
 
 For staff who missed the room, or for a Teams share with no phones:
 
-1. **Handout** — two A4 pages. Open `handout.html` and use Print / save PDF.
+1. **Handout** — two A4 pages. Open `copd/handout.html` or `hf/handout.html` and use Print / save PDF.
 2. **Self-guided deck** — add `?view=self` to the deck URL. Same slides, no QR, no live vote, no certificate register. Check questions reveal on click or Space. **Printable handout** is on the bottom bar.
 
 A PowerPoint export is a poorer copy of this deck (NEWS2 chart and kit photos sit in HTML). Use the self-guided URL if you need a version with voting removed.

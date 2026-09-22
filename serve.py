@@ -162,10 +162,15 @@ def request_base(handler: SimpleHTTPRequestHandler) -> str:
     return f"{proto}://{host}"
 
 
-def join_url(handler: SimpleHTTPRequestHandler, room_id: str = "") -> str:
+def join_url(handler: SimpleHTTPRequestHandler, room_id: str = "", course_id: str = "") -> str:
     url = request_base(handler) + "/v"
+    parts = []
     if room_id:
-        url += "?r=" + room_id
+        parts.append("r=" + room_id)
+    if course_id in COURSES:
+        parts.append("course=" + course_id)
+    if parts:
+        url += "?" + "&".join(parts)
     return url
 
 
@@ -1366,9 +1371,13 @@ def names_csv(room: Room) -> bytes:
 
 
 def with_room_meta(room: Room, payload: dict, include_names: bool = False) -> dict:
+    rec = course_record(getattr(room, "course_id", "copd") or "copd")
     payload["register"] = room.register_open
     payload["nameCount"] = len(room.names)
     payload["room"] = room.id
+    payload["course"] = rec["id"]
+    payload["courseTitle"] = rec["title"]
+    payload["courseDetail"] = rec["detail"]
     if include_names:
         payload["names"] = sorted(
             (row.get("name") or "" for row in room.names.values()),
@@ -1665,6 +1674,16 @@ class Handler(SimpleHTTPRequestHandler):
             loc = "/?view=vote"
             if rid:
                 loc += "&r=" + rid
+            course = request_course_id(self)
+            if not course and rid:
+                with LOCK:
+                    room = get_room(rid, create=False)
+                if room is not None:
+                    course = getattr(room, "course_id", "") or ""
+                    if course not in COURSES:
+                        course = ""
+            if course:
+                loc += "&course=" + course
             self.send_response(302)
             self.send_header("Location", loc)
             self.send_header("Cache-Control", "no-store")
@@ -1701,7 +1720,7 @@ class Handler(SimpleHTTPRequestHandler):
                 else:
                     room = self.room_for(create=False)
                 rid = room.id if room else ""
-                join = join_url(self, rid)
+                join = join_url(self, rid, getattr(room, "course_id", "") if room else "")
                 payload = {"live": True, "join": join, "room": rid, "ips": lan_ips(), "port": PORT}
                 if authorised_host(self):
                     payload["host"] = True
@@ -1830,7 +1849,17 @@ class Handler(SimpleHTTPRequestHandler):
             except OSError:
                 pass
             notify_name(name, at, esr, email)
-            send_json(self, {"ok": True, "poll": public_poll(room), "name": name, "esr": esr, "email": email})
+            rec = course_record(getattr(room, "course_id", "copd") or "copd")
+            send_json(self, {
+                "ok": True,
+                "poll": public_poll(room),
+                "name": name,
+                "esr": esr,
+                "email": email,
+                "title": rec["title"],
+                "detail": rec["detail"],
+                "date": at,
+            })
             return
         if path == "/api/session/start":
             if not authorised_host(self):

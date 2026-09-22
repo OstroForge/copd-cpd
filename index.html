@@ -3173,6 +3173,7 @@
       try {
         const u = new URL(join, location.origin);
         u.searchParams.set("r", hub.room);
+        if (COURSE.id) u.searchParams.set("course", COURSE.id);
         return u.toString();
       } catch (err) {
         return join;
@@ -3199,7 +3200,9 @@
 
     function pageJoinFallback() {
       const h = location.hostname;
-      if (h && h !== "localhost" && h !== "127.0.0.1") return location.origin + "/v";
+      if (h && h !== "localhost" && h !== "127.0.0.1") {
+        return location.origin + "/v?course=" + encodeURIComponent(COURSE.id);
+      }
       return "";
     }
 
@@ -3807,7 +3810,12 @@
       const sheet = document.getElementById("cpdCert");
       if (!nameEl || !dateEl || !sheet) return;
       nameEl.textContent = who;
-      if (courseEl) courseEl.textContent = (course && course.title) || COURSE.title;
+      if (courseEl) {
+        const title = (course && course.title)
+          || (hub.poll && hub.poll.courseTitle)
+          || COURSE.title;
+        courseEl.textContent = title;
+      }
       const raw = String(when || "").trim();
       const parsed = raw ? new Date(raw) : new Date();
       const stamp = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
@@ -4054,6 +4062,10 @@
         }
         statusEl.textContent = "Waiting for the next question";
       }
+      function certCourse() {
+        const title = (hub.poll && hub.poll.courseTitle) || COURSE.title;
+        return { title };
+      }
       function drawCert(p) {
         const saved = localStorage.getItem("copd-cert-name") || "";
         const savedEsr = localStorage.getItem("copd-cert-esr") || "";
@@ -4086,7 +4098,7 @@
             <button type="submit">${saved ? "Update my details" : "Send my name"}</button>
           </form>`;
         const print = optsEl.querySelector(".cert-print-btn");
-        if (print) print.onclick = () => printCertificate(saved);
+        if (print) print.onclick = () => printCertificate(saved, null, certCourse());
         const form = optsEl.querySelector(".cert-form");
         form.onsubmit = async (e) => {
           e.preventDefault();
@@ -4121,7 +4133,9 @@
               lastCertDraw = "";
               if (data.poll) hub.poll = data.poll;
               draw();
-              printCertificate(data.name || name);
+              printCertificate(data.name || name, data.date, {
+                title: data.title || (data.poll && data.poll.courseTitle) || COURSE.title
+              });
             } else {
               statusEl.textContent = data.error === "missing esr"
                 ? "Enter your ESR number."

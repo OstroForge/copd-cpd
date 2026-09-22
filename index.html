@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>COPD in Pre-hospital Care | Ambulance CPD</title>
+  <title>Hub CPD | Ambulance clinical refreshers</title>
   <style>
     :root {
       --navy: #12382c;
@@ -80,6 +80,50 @@
       transform: translateX(-28px);
       z-index: 1;
     }
+    body.theme-hf {
+      --navy: #1b2744;
+      --navy-2: #2c3f6a;
+      --ink: #1c2333;
+      --muted: #5c6578;
+      --paper: #e4e8f0;
+      --card: #eef1f7;
+      --line: #c5cddd;
+      --amber: #c45c3a;
+      --amber-bg: #f8e8e2;
+      --teal: #2d6a8f;
+      --teal-bg: #e3eef5;
+      --stage: #0a101c;
+    }
+    body.theme-hf .slide.title-slide,
+    body.theme-hf .slide.cert-slide {
+      background:
+        linear-gradient(90deg, rgba(10, 16, 36, 0.92) 0%, rgba(18, 28, 58, 0.58) 40%, rgba(27, 39, 68, 0.32) 100%),
+        linear-gradient(rgba(27, 39, 68, 0.34), rgba(12, 18, 40, 0.34)),
+        url("assets/title-ambulance.png") right center / cover no-repeat;
+    }
+    body.theme-hf .slide.title-slide h1,
+    body.theme-hf .slide.cert-slide h2 { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,0.75); }
+    body.theme-hf .slide.title-slide .subtitle { color: #e8eef8; }
+    body.theme-hf .slide.title-slide .meta { color: #c5d0e4; }
+    body.theme-hf .controls { background: #0c1220; color: #c5d0e4; }
+    body.theme-hf .controls button,
+    body.theme-hf .controls a.home-link { background: #243356; color: #e8eef8; }
+    body.theme-hf .controls button:hover,
+    body.theme-hf .controls a.home-link:hover { background: #31467a; }
+    body.theme-hf .progress { background: #243356; }
+    body.theme-hf .notes { background: #121a30; color: #e7ecf6; border-top-color: var(--amber); }
+    body.theme-hf .notes strong { color: #e8a07a; }
+    body.theme-hf .pv-live { background: #121a30; color: #e8eef8; border-color: #31467a; }
+    body.theme-hf .title-slide .footer-bar,
+    body.theme-hf .cert-slide .footer-bar { color: #9aaccc; }
+    body.theme-hf .vote-btn { background: #2c3f6a; }
+    body.theme-hf #voteTeach { background: #1b2744; }
+    body.theme-hf .cpd-cert-mark { background: #1b2744; }
+    body.theme-hf .cpd-cert-page h1,
+    body.theme-hf .cpd-cert-page .who,
+    body.theme-hf .cpd-cert-page .course { color: #1b2744; }
+    body.theme-hf .cpd-cert-page .who { border-bottom-color: #c45c3a; }
+
     .slide.title-slide,
     .slide.cert-slide {
       background:
@@ -595,10 +639,68 @@
       color: var(--muted);
       line-height: 1.4;
     }
+    .hub-courses {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 28px;
+    }
+    .hub-course {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 20px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .hub-course.hf {
+      border-color: #b7c4db;
+      background: #eef1f7;
+    }
+    .hub-tag {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #8a5608;
+    }
+    .hub-course.hf .hub-tag { color: #c45c3a; }
+    .hub-course h2 {
+      font-size: 22px;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+    .hub-course.hf h2 { color: #1b2744; }
+    .hub-course p { font-size: 15px; color: var(--muted); line-height: 1.4; }
+    .hub-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 8px;
+    }
+    .hub-links a {
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 8px 12px;
+    }
+    .hub-course.hf .hub-links a { background: #1b2744; }
+    .hub-links a:hover,
+    .hub-links a:focus-visible { filter: brightness(1.12); }
+    .hub-cert {
+      margin-top: 22px;
+      font-size: 16px;
+    }
+    .hub-cert a { color: var(--navy); font-weight: 700; }
     @media (max-width: 720px) {
       .home-panel { padding: 24px 20px 20px; }
       .home-choices { grid-template-columns: 1fr; }
       .home-choices a { min-height: 0; }
+      .hub-courses { grid-template-columns: 1fr; }
     }
     .controls a.home-link {
       background: #1c4236;
@@ -1619,27 +1721,32 @@
 <body>
   <main id="home">
     <div class="home-panel">
-      <p class="home-kicker">Hub CPD  ·  JRCALC Chronic Obstructive Pulmonary Disease</p>
-      <h1>COPD, Type 2 Respiratory Failure and NEWS2</h1>
-      <p class="home-lead">30 minutes CPD session, refreshing JRCALC guidance and application of RCP NEWS2. Always ensure you use the current live guidance..</p>
-      <div class="home-choices">
-        <a href="?view=self">
-          <h2>Self-guided</h2>
-          <p>Work through the slides yourself. Check questions as you go. No live vote or register.</p>
-        </a>
-        <a href="?view=presenter">
-          <h2>Presenter-guided</h2>
-          <p>Deliver the session in the room or on Teams. Hub PIN required. Live vote and certificates.</p>
-        </a>
-        <a href="handout.html">
-          <h2>Handout</h2>
-          <p>Two A4 pages. Print or save as PDF.</p>
-        </a>
-        <a href="?view=lookup">
-          <h2>Get my certificate</h2>
-          <p>Enter the course, your name and ESR number to print your certificate again.</p>
-        </a>
+      <p class="home-kicker">Hub CPD  ·  West Midlands Ambulance Service</p>
+      <h1>Ambulance clinical refreshers</h1>
+      <p class="home-lead">30-minute JRCALC sessions for the room, Teams, or self-guided study. Always use the live guideline on the day.</p>
+      <div class="hub-courses">
+        <article class="hub-course">
+          <p class="hub-tag">Respiratory</p>
+          <h2>COPD, Type 2 Respiratory Failure and NEWS2</h2>
+          <p>Controlled oxygen versus NEWS2 Scale 2, and why they are not the same decision.</p>
+          <div class="hub-links">
+            <a href="?course=copd&amp;view=self">Self-guided</a>
+            <a href="?course=copd&amp;view=presenter">Presenter</a>
+            <a href="handout.html">Handout</a>
+          </div>
+        </article>
+        <article class="hub-course hf">
+          <p class="hub-tag">Cardiac</p>
+          <h2>Heart Failure</h2>
+          <p>Pulmonary oedema, positioning, GTN at 110 mmHg, fluids, furosemide and CPAP.</p>
+          <div class="hub-links">
+            <a href="?course=hf&amp;view=self">Self-guided</a>
+            <a href="?course=hf&amp;view=presenter">Presenter</a>
+            <a href="handout-hf.html">Handout</a>
+          </div>
+        </article>
       </div>
+      <p class="hub-cert"><a href="?view=lookup">Get my certificate</a> — enter the course, your name and ESR number.</p>
     </div>
   </main>
   <main id="lookup">
@@ -1651,6 +1758,7 @@
         <label for="lookupCourse">Course attended</label>
         <select id="lookupCourse" name="course" required>
           <option value="copd">COPD, Type 2 Respiratory Failure and NEWS2</option>
+          <option value="hf">Heart Failure in Pre-hospital Care</option>
         </select>
         <label for="lookupName">Name on the certificate</label>
         <input id="lookupName" name="name" type="text" maxlength="80" autocomplete="name" required />
@@ -1704,7 +1812,7 @@
     <button type="button" id="fsBtn">Fullscreen (F)</button>
   </div>
   <div id="voteApp" hidden>
-    <p class="vote-kicker">COPD CPD</p>
+    <p class="vote-kicker">Hub CPD</p>
     <p id="voteStatus">Connecting to the room…</p>
     <p id="votePrompt"></p>
     <div id="voteOpts"></div>
@@ -1738,8 +1846,36 @@
     </div>
   </div>
 
+  <script src="hf-slides.js"></script>
   <script>
     const NEWS2_CITE = "Reproduced from: Royal College of Physicians. <em>National Early Warning Score (NEWS) 2: Standardising the assessment of acute-illness severity in the NHS.</em> Updated report of a working party. London: RCP, 2017.";
+    const params = new URLSearchParams(location.search);
+    const COURSE_CATALOG = {
+      copd: {
+        id: "copd",
+        title: "COPD, Type 2 Respiratory Failure and NEWS2",
+        short: "COPD CPD",
+        footer: "Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease",
+        handout: "handout.html",
+        store: "copd-cpd-state",
+        selfStore: "copd-cpd-self-state",
+        channel: "copd-cpd-deck",
+        attendKey: "copd-cpd-register"
+      },
+      hf: {
+        id: "hf",
+        title: "Heart Failure in Pre-hospital Care",
+        short: "Heart Failure CPD",
+        footer: "Hub CPD · JRCALC Heart Failure",
+        handout: "handout-hf.html",
+        store: "hf-cpd-state",
+        selfStore: "hf-cpd-self-state",
+        channel: "hf-cpd-deck",
+        attendKey: "hf-cpd-register"
+      }
+    };
+    const COURSE = COURSE_CATALOG[String(params.get("course") || "").trim().toLowerCase()] || COURSE_CATALOG.copd;
+    if (COURSE.id === "hf") document.body.classList.add("theme-hf");
     const NEWS2_FORM = {
       cols: [20.04, 31.24, 42.43, 53.62, 64.81, 76.01, 87.20, 98.61],
       rows: [
@@ -1771,7 +1907,7 @@
       const hits = form ? news2FormHits(form) : "";
       return `<figure class="n2-official${form ? " n2-form" : ""}"><div class="n2-form-scroll"><div class="n2-form-wrap"><img src="assets/news2-chart-1.png" alt="NEWS2 Chart 1: The NEWS scoring system">${hits}</div></div><figcaption class="n2-cite">${NEWS2_CITE}</figcaption></figure>`;
     }
-    const slideSource = [
+    const copdSlideSource = [
       {
         type: "title",
         kicker: "Ambulance Staff CPD  ·  30 minutes",
@@ -2636,10 +2772,13 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       }
     ];
 
-    const selfMode = new URLSearchParams(location.search).get("view") === "self";
+    const selfMode = params.get("view") === "self";
+    const slideSource = (COURSE.id === "hf" && typeof heartFailureSlides === "function")
+      ? heartFailureSlides()
+      : copdSlideSource;
     const slides = slideSource.flatMap((s) => {
       if (selfMode && (s.collectNames || s.questions)) return [];
-      if (selfMode && s.type === "title" && s.title.indexOf("COPD, Type 2") === 0) {
+      if (selfMode && s.type === "title") {
         return [{ ...s, kicker: "Self-guided CPD  ·  about 30 minutes" }];
       }
       if (s.type !== "poll") return [s];
@@ -2648,6 +2787,9 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         if (s.pollId === "hands") {
           copy.kicker = "Check yourself";
           copy.title = "Default NEWS2 scale in COPD";
+        } else if (s.pollId === "hf-hands") {
+          copy.kicker = "Check yourself";
+          copy.title = "GTN blood pressure in acute heart failure";
         } else if (s.layout === "news2") {
           copy.kicker = String(s.kicker || "").replace("live NEWS2", "check yourself");
           copy.prompt = "Work out the NEWS2 from the observations. Space shows the scoring.";
@@ -2716,9 +2858,8 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     const timerEl = document.getElementById("timer");
     const pvBtn = document.getElementById("pvBtn");
     const pvHint = document.getElementById("pvHint");
-    const STORE = selfMode ? "copd-cpd-self-state" : "copd-cpd-state";
-    const CHANNEL = "copd-cpd-deck";
-    const params = new URLSearchParams(location.search);
+    const STORE = selfMode ? COURSE.selfStore : COURSE.store;
+    const CHANNEL = COURSE.channel;
     const requested = params.get("view");
     let view = requested === "presenter" || requested === "audience" || requested === "vote" || requested === "self" || requested === "lookup"
       ? requested
@@ -2783,6 +2924,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     function openSelfGuidedDeck() {
       const url = new URL(location.href);
       url.searchParams.set("view", "self");
+      url.searchParams.set("course", COURSE.id);
       url.searchParams.delete("host");
       url.searchParams.delete("r");
       location.replace(url.toString());
@@ -2838,27 +2980,27 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       document.body.classList.toggle("audience", view === "audience");
       document.body.classList.toggle("self", view === "self");
       if (view === "presenter") {
-        document.title = "COPD CPD — Presenter";
+        document.title = COURSE.short + " — Presenter";
         pvBtn.textContent = "Audience window";
         notesEl.classList.add("visible");
         pvHint.textContent = audienceWin && !audienceWin.closed
           ? "Share the Audience window with the room projector and in Teams (Share window). Keep this presenter screen on your laptop. Paste the join link in the Teams chat so remote staff can vote."
           : "Popup blocked? Open a second copy and add ?view=audience to the address. Share that window in the room and in Teams.";
       } else if (view === "audience") {
-        document.title = "COPD CPD — Audience";
+        document.title = COURSE.short + " — Audience";
         pvBtn.hidden = true;
         notesEl.classList.remove("visible");
       } else if (view === "self") {
-        document.title = "COPD CPD — Self-guided";
+        document.title = COURSE.short + " — Self-guided";
         pvBtn.textContent = "Printable handout";
         notesEl.classList.remove("visible");
         setHubLive(false);
       } else if (view === "home") {
-        document.title = "COPD CPD | Hub CPD";
+        document.title = "Hub CPD";
       } else if (view === "lookup") {
         document.title = "Get my certificate | Hub CPD";
       } else {
-        document.title = "COPD in Pre-hospital Care | Ambulance CPD";
+        document.title = COURSE.title + " | Hub CPD";
         pvBtn.textContent = "Presenter view (S)";
       }
     }
@@ -2870,7 +3012,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
           <h1>${s.title}</h1>
           <p class="subtitle">${s.subtitle || ""}</p>
           ${s.meta ? `<p class="meta">${s.meta}</p>` : ""}
-          <div class="footer-bar"><span>Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease v20.40</span><span>${idx + 1} / ${slides.length}</span></div>
+          <div class="footer-bar"><span>${COURSE.footer}</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
       }
       if (s.type === "poll") {
@@ -2921,7 +3063,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
             ${selfMode && s.teach ? `<div class="poll-teach">${s.teach}</div>` : ""}
             <p class="poll-host"></p>
           </div>
-          <div class="footer-bar"><span>Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+          <div class="footer-bar"><span>${COURSE.footer}</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
       }
       if (s.type === "poll-results") {
@@ -2952,14 +3094,14 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
             ${spread}
             <div class="poll-teach build"></div>
           </div>
-          <div class="footer-bar"><span>Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+          <div class="footer-bar"><span>${COURSE.footer}</span><span>${idx + 1} / ${slides.length}</span></div>
         </section>`;
       }
       return `<section class="slide${s.collectNames ? " cert-slide" : ""}" data-i="${idx}">
         <div class="kicker">${s.kicker}</div>
         <h2>${s.title}</h2>
         ${s.html}
-        <div class="footer-bar"><span>Hub CPD · JRCALC Chronic Obstructive Pulmonary Disease v20.40 · RCP NEWS2</span><span>${idx + 1} / ${slides.length}</span></div>
+        <div class="footer-bar"><span>${COURSE.footer}</span><span>${idx + 1} / ${slides.length}</span></div>
       </section>`;
     }
 
@@ -3029,7 +3171,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       return true;
     }
 
-    const ATTEND_KEY = "copd-cpd-register";
+    const ATTEND_KEY = COURSE.attendKey;
     const PRESENTER_KEY = "copd-cpd-presenter";
     let sessionFile = "";
     let sessionFolder = "";
@@ -3111,7 +3253,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
         const res = await fetch("/api/session/start", {
           method: "POST",
           headers: apiHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ presenter })
+          body: JSON.stringify({ presenter, course: COURSE.id })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.ok) {
@@ -3752,7 +3894,8 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       url.searchParams.set("view", "audience");
       url.searchParams.delete("host");
       if (hub.room) url.searchParams.set("r", hub.room);
-      audienceWin = window.open(url.toString(), "copd-audience");
+      if (COURSE.id) url.searchParams.set("course", COURSE.id);
+      audienceWin = window.open(url.toString(), COURSE.id + "-audience");
       applyView();
     }
 
@@ -3766,6 +3909,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       }
       const url = new URL(location.href);
       url.searchParams.set("view", "presenter");
+      url.searchParams.set("course", COURSE.id);
       url.searchParams.delete("r");
       history.replaceState(null, "", url);
       applyView();
@@ -3783,7 +3927,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     };
     pvBtn.onclick = () => {
       if (view === "self") {
-        window.open("handout.html", "_blank");
+        window.open(COURSE.handout, "_blank");
         return;
       }
       if (view === "presenter") openAudienceWindow();
@@ -3896,7 +4040,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
       const sheet = document.getElementById("cpdCert");
       if (!nameEl || !dateEl || !sheet) return;
       nameEl.textContent = who;
-      if (courseEl) courseEl.textContent = (course && course.title) || "COPD, Type 2 Respiratory Failure and NEWS2";
+      if (courseEl) courseEl.textContent = (course && course.title) || COURSE.title;
       const raw = String(when || "").trim();
       const parsed = raw ? new Date(raw) : new Date();
       const stamp = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
@@ -4023,7 +4167,7 @@ Do not lecture pathophysiology. The trap box is the only part that must land.`
     function runVoteApp() {
       document.body.classList.add("vote");
       document.getElementById("voteApp").hidden = false;
-      document.title = "COPD CPD — Vote";
+      document.title = "Hub CPD — Vote";
       const meta = document.querySelector('meta[name="viewport"]');
       if (meta) meta.setAttribute("content", "width=device-width, initial-scale=1");
       const statusEl = document.getElementById("voteStatus");

@@ -62,9 +62,15 @@ COURSES = {
     "copd": {
         "id": "copd",
         "title": "COPD, Type 2 Respiratory Failure and NEWS2",
-        "detail": "JRCALC Chronic Obstructive Pulmonary Disease (G0390) · 30 minutes",
+        "detail": "JRCALC Chronic Obstructive Pulmonary Disease · 30 minutes",
         "prefix": "COPD-CPD-attendance-",
-    }
+    },
+    "hf": {
+        "id": "hf",
+        "title": "Heart Failure in Pre-hospital Care",
+        "detail": "JRCALC Heart Failure · 30 minutes",
+        "prefix": "HF-CPD-attendance-",
+    },
 }
 
 
@@ -286,6 +292,7 @@ class Room:
         self.session_cloud = False
         self.session_url = ""
         self.bound = False
+        self.course_id = "copd"
         self.touched = time.monotonic()
 
     def cert_path(self) -> Path:
@@ -403,13 +410,15 @@ def attend_dir() -> Path | None:
     return attend_config()[1]
 
 
-def session_filename(presenter: str = "", room_id: str = "") -> str:
+def session_filename(course_id: str = "copd", presenter: str = "", room_id: str = "") -> str:
     stamp = datetime.now().strftime("%Y-%m-%d-%H%M")
     person = filename_person(presenter)
     code = re.sub(r"[^A-Z0-9]", "", (room_id or "").upper())[:8]
+    course = COURSES.get(course_id) or COURSES["copd"]
+    prefix = course["prefix"]
     if code:
-        return "COPD-CPD-attendance-{}-{}-{}.csv".format(stamp, person, code)
-    return "COPD-CPD-attendance-{}-{}.csv".format(stamp, person)
+        return "{}{}-{}-{}.csv".format(prefix, stamp, person, code)
+    return "{}{}-{}.csv".format(prefix, stamp, person)
 
 
 def session_bind_path(rid: str) -> Path:
@@ -423,6 +432,7 @@ def save_session_bind(room: Room) -> None:
         "cloud": room.session_cloud,
         "url": room.session_url,
         "file": str(room.session_file) if room.session_file else "",
+        "course": getattr(room, "course_id", "copd") or "copd",
     }
     try:
         session_bind_path(room.id).write_text(json.dumps(payload), encoding="utf-8")
@@ -444,7 +454,7 @@ def latest_attendance_file(room_id: str) -> Path | None:
     for root in roots:
         if not root.is_dir():
             continue
-        for path in root.glob("COPD-CPD-attendance-*" + suffix):
+        for path in root.glob("*-CPD-attendance-*" + suffix):
             key = str(path.resolve()) if path.exists() else str(path)
             if key in seen:
                 continue
@@ -492,6 +502,11 @@ def restore_room_session(room: Room) -> None:
             room.session_name = name
             room.session_cloud = bool(data.get("cloud"))
             room.session_url = str(data.get("url") or "")
+            course = str(data.get("course") or "").strip().casefold()
+            if course in COURSES:
+                room.course_id = course
+            elif str(name).startswith("HF-CPD-"):
+                room.course_id = "hf"
             file_raw = str(data.get("file") or "")
             if file_raw:
                 room.session_file = Path(file_raw)
@@ -953,20 +968,22 @@ def find_certificate(course_id: str, name: str, esr: str) -> dict | None:
     }
 
 
-def start_session_file(room: Room, presenter: str = "") -> tuple[str | None, str]:
+def start_session_file(room: Room, presenter: str = "", course_id: str = "copd") -> tuple[str | None, str]:
     lead = clean_name(presenter)
     if len(lead) < 2:
         return None, "Enter the name of the person delivering this session."
+    course = course_id if course_id in COURSES else "copd"
     share, folder = attend_config()
     if not share and folder is None:
         return None, "No OneDrive folder is configured. Keep the folder share in attend-folder.txt, or set ATTEND_SHARE_URL."
     with LOCK:
-        name = session_filename(lead, room.id)
+        name = session_filename(course, lead, room.id)
         room.session_name = name
         room.session_cloud = False
         room.session_file = folder / name if folder is not None else None
         room.session_url = ""
         room.bound = True
+        room.course_id = course
         body = names_human_csv(room)
     if share:
         try:
@@ -1525,10 +1542,13 @@ class Handler(SimpleHTTPRequestHandler):
                 send_json(self, {"ok": False, "error": "forbidden"}, 403)
                 return
             presenter = presenter_for_token(request_host_secret(self)) or str(data.get("presenter") or "")
-            print("Start session from {} ({})".format(self.client_address[0], presenter), flush=True)
+            course = str(data.get("course") or "copd").strip().casefold()
+            if course not in COURSES:
+                course = "copd"
+            print("Start session from {} ({}) [{}]".format(self.client_address[0], presenter, course), flush=True)
             with LOCK:
                 room = self.room_for(create=True)
-            path_out, err = start_session_file(room, presenter)
+            path_out, err = start_session_file(room, presenter, course)
             if path_out is None:
                 send_json(self, {"ok": False, "error": err}, 400)
                 return
@@ -1684,8 +1704,9 @@ def main() -> None:
     ips = lan_ips()
     share, folder = attend_config()
     print()
-    print("COPD CPD deck + live quiz", flush=True)
-    print("  Presenter:  http://127.0.0.1:{}/?view=presenter".format(PORT), flush=True)
+    print("Hub CPD deck + live quiz", flush=True)
+    print("  Home:       http://127.0.0.1:{}/".format(PORT), flush=True)
+    print("  Presenter:  http://127.0.0.1:{}/?course=hf&view=presenter".format(PORT), flush=True)
     if PRESENTERS:
         print("  Facilitator PINs (Hub staff type their own; they do not need Render):", flush=True)
         for pin, name in PRESENTERS.items():

@@ -322,6 +322,14 @@ def new_room_id() -> str:
     return secrets.token_urlsafe(6).upper()[:8]
 
 
+def request_course_id(handler: SimpleHTTPRequestHandler) -> str:
+    parsed = urlparse(handler.path)
+    course = (parse_qs(parsed.query).get("course") or [""])[0].strip().casefold()
+    if not course:
+        course = (handler.headers.get("X-Course") or "").strip().casefold()
+    return course if course in COURSES else ""
+
+
 def request_room_id(handler: SimpleHTTPRequestHandler) -> str:
     parsed = urlparse(handler.path)
     rid = (parse_qs(parsed.query).get("r") or [""])[0].strip().upper()
@@ -948,18 +956,29 @@ def od_file_web_url(session: dict, filename: str, course_id: str = "") -> str:
     return share
 
 
-def session_status(room: Room) -> dict:
+def session_folder_label(course_id: str) -> str:
+    share, folder = attend_config()
+    child = course_folder_name(course_id)
+    if share:
+        return "certificates/{}/{}".format(child, attend_env())
+    dest = attend_course_dir(course_id) or repo_course_dir(course_id)
+    return str(dest)
+
+
+def session_status(room: Room, course_id: str = "") -> dict:
     share, folder = attend_config()
     course = getattr(room, "course_id", "copd") or "copd"
+    if not room.session_name and course_id in COURSES:
+        course = course_id
     child = course_folder_name(course)
-    name = room.session_name or (room.session_file.name if room.session_file else "")
+    name = room.session_name or ""
     local = room.session_file if room.session_file and room.session_file.is_file() else None
+    started = bool(name)
     if share:
-        folder_label = "certificates/{}/{}".format(child, attend_env())
-        file_label = "{}/{}/{}".format(child, attend_env(), name) if name else folder_label
+        folder_label = session_folder_label(course)
+        file_label = "{}/{}/{}".format(child, attend_env(), name) if started else ""
     else:
-        dest = attend_course_dir(course) or repo_course_dir(course)
-        folder_label = str(dest)
+        folder_label = session_folder_label(course)
         file_label = str(local) if local else name
     return {
         "ok": True,
@@ -969,9 +988,11 @@ def session_status(room: Room) -> dict:
         "name": name,
         "count": len(room.names),
         "ready": bool(folder or share),
-        "exists": room.session_cloud or bool(local),
+        "exists": started and (room.session_cloud or bool(local)),
+        "started": started,
         "cloud": room.session_cloud,
         "url": room.session_url,
+        "course": course,
     }
 
 
@@ -1551,7 +1572,12 @@ class Handler(SimpleHTTPRequestHandler):
         super().log_message(fmt, *args)
 
     def room_for(self, create: bool = False) -> Room | None:
-        return get_room(request_room_id(self), create=create)
+        room = get_room(request_room_id(self), create=create)
+        if room is not None and not room.session_name:
+            course = request_course_id(self)
+            if course:
+                room.course_id = course
+        return room
 
     def do_GET(self) -> None:
         if redirect_legacy_host(self):
@@ -1625,22 +1651,25 @@ class Handler(SimpleHTTPRequestHandler):
                 return
             with LOCK:
                 room = self.room_for(create=False)
+            course = request_course_id(self) or "copd"
             if room is None:
                 share, folder = attend_config()
                 send_json(self, {
                     "ok": True,
                     "room": "",
-                    "folder": "OneDrive certificates folder" if share else (str(folder) if folder else ""),
+                    "folder": session_folder_label(course) if (share or folder) else "",
                     "file": "",
                     "name": "",
                     "count": 0,
                     "ready": bool(folder or share),
                     "exists": False,
+                    "started": False,
                     "cloud": False,
                     "url": "",
+                    "course": course,
                 })
                 return
-            send_json(self, session_status(room))
+            send_json(self, session_status(room, course))
             return
         if path == "/api/results.csv":
             if not authorised_host(self):

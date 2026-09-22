@@ -2960,6 +2960,18 @@
       localStorage.setItem(ATTEND_KEY, JSON.stringify(rec));
     }
 
+    function applySessionStatus(data) {
+      if (!data || typeof data !== "object") return;
+      if (data.room) setRoom(data.room);
+      sessionFolder = data.folder || "";
+      sessionUrl = data.url || "";
+      const csvName = String(data.name || "").trim();
+      const looksLikeCsv = /\.csv$/i.test(csvName);
+      sessionFile = (data.started || data.exists || looksLikeCsv) ? csvName : "";
+      paintSessionFile();
+      paintNotes();
+    }
+
     function paintSessionFile() {
       const el = document.getElementById("sessionFile");
       const btn = document.getElementById("startSession");
@@ -2969,7 +2981,8 @@
       }
       if (!el) return;
       if (sessionFile) {
-        el.textContent = "Session started. Saving names to OneDrive: " + sessionFile;
+        const where = sessionFolder ? sessionFolder + "/" + sessionFile : sessionFile;
+        el.textContent = "Session started. Saving names to OneDrive: " + where;
         return;
       }
       if (hub.presenter) {
@@ -2982,16 +2995,14 @@
     async function refreshSessionStatus() {
       if (view === "audience" || view === "vote" || view === "self") return;
       try {
-        const res = await fetch("/api/session", { headers: apiHeaders(), cache: "no-store" });
+        const res = await fetch("/api/session?course=" + encodeURIComponent(COURSE.id), {
+          headers: apiHeaders(),
+          cache: "no-store"
+        });
         if (!res.ok) return;
         const data = await res.json();
         sessionApi = true;
-        if (data.room) setRoom(data.room);
-        sessionFolder = data.folder || "";
-        sessionFile = data.file || "";
-        sessionUrl = data.url || "";
-        paintSessionFile();
-        paintNotes();
+        applySessionStatus(data);
       } catch (err) { /* local-only */ }
     }
 
@@ -3021,17 +3032,12 @@
           return false;
         }
         sessionApi = true;
-        if (data.room) setRoom(data.room);
-        sessionFolder = data.folder || sessionFolder;
-        sessionFile = data.file || "";
-        sessionUrl = data.url || "";
+        applySessionStatus(data);
         try { localStorage.removeItem(ATTEND_KEY); } catch (err) { /* ignore */ }
         if (hub.poll) {
           hub.poll.names = [];
           hub.poll.nameCount = 0;
         }
-        paintSessionFile();
-        paintNotes();
         const fileName = data.name || sessionFile.split(/[/\\]/).pop() || sessionFile;
         window.alert(
           "Session started.\n\n" + fileName +
@@ -3177,6 +3183,7 @@
       const headers = Object.assign({}, extra || {});
       if (hub.token) headers["X-Host-Token"] = hub.token;
       if (hub.room) headers["X-Room"] = hub.room;
+      if (COURSE.id) headers["X-Course"] = COURSE.id;
       return headers;
     }
 

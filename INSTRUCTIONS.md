@@ -175,19 +175,32 @@ Automatic copies (same names, no extra click):
 
 You can still download **certificate names** from the presenter sidebar. On Render the files are lost when the service sleeps, so also set a `CERT_WEBHOOK` environment variable if you want each name POSTed as JSON to an inbox you control.
 
-**OneDrive attendance folder:** account **jon.ski1382@gmail.com**. `attend-folder.txt` still chooses **DEV** or **LIVE**. Files then go in the course folder:
+**OneDrive attendance folder:** account **jon.ski1382@gmail.com**. Layout is course, then env:
 
-| Course | Local path |
+```
+certificates/
+  copd/dev
+  copd/live
+  heart failure/dev
+  heart failure/live
+```
+
+The OneDrive **share link** must be the parent `certificates` folder — not `certificates/dev` and not `certificates/COPD/dev`. The site then creates `copd/dev`, `copd/live`, `heart failure/dev` and `heart failure/live` inside that folder.
+
+| Course | Path |
 | --- | --- |
 | COPD | `certificates/copd/dev` or `certificates/copd/live` |
 | Heart Failure | `certificates/heart failure/dev` or `certificates/heart failure/live` |
 
-The parent folder (open while signed in as that account):  
-https://onedrive.live.com/my?id=%2Fpersonal%2F4a2042dbbcf48071%2FDocuments%2FCursor%20Projects%2FCPD%2FCOPD%2Fcertificates&viewid=6c1bdb91-03c5-436a-8302-197408acb301
+On this laptop, `attend-folder.txt` (gitignored) keeps a `# LIVE` block and a `# DEV` block. Each block should use a share of that **parent** `certificates` folder, and the local path `...\COPD\certificates`. `python serve.py` uses **DEV**, so new files land in `certificates/<course>/dev`.
 
-On this laptop, `attend-folder.txt` (gitignored) keeps a `# LIVE` block and a `# DEV` block with the OneDrive **share** link (and optional local path). `python serve.py` uses **DEV**, so new files land in `certificates/<course>/dev`. Render uses `ATTEND_SHARE_URL` and writes to `certificates/<course>/live`. Do not commit that share link.
+**Test site (`hub-cpd-test`) only:** set `ATTEND_SHARE_URL` to the parent `certificates` share, and keep `ATTEND_ENV=dev`. Do **not** change `ATTEND_SHARE_URL` on live `hub-cpd` (`main`) until this branch is merged.
 
-To add a later package, give it a `folder` name in `COURSES` in `serve.py`. The `dev` and `live` folders are created on first **Start session**. Old files in `certificates/dev` are still found for certificate lookup.
+**Live `hub-cpd`:** leave its current LIVE share as it is. It still writes COPD registers into that live folder. After merge, point live at the same parent `certificates` share and set `ATTEND_ENV=live` so new files go to `certificates/copd/live`. Copy any old live CSVs into `copd/live` at that point.
+
+Old files in `certificates/dev`, `certificates/COPD/dev`, or `certificates/COPD/dev/heart failure` are still found for certificate lookup.
+
+To add a later package, give it a `folder` name in `COURSES` in `serve.py`. The `dev` and `live` folders are created on first **Start session**.
 
 ## Handout and self-guided
 

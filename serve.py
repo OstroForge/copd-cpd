@@ -415,9 +415,10 @@ def attend_config() -> tuple[str, Path | None]:
         except OSError:
             lines = []
         parts = attend_file_sections(lines)
-        chosen = parts["dev"]
+        env = attend_env()
+        chosen = parts.get(env) or parts["dev"]
         fallback = parts["any"]
-        other = parts["live"]
+        other = parts["live"] if env == "dev" else parts["dev"]
         share = chosen["share"] or fallback["share"] or other["share"]
         if not folder_raw:
             folder_raw = chosen["folder"] or fallback["folder"] or other["folder"]
@@ -482,6 +483,9 @@ def repo_course_dir(course_id: str) -> Path:
 
 def attendance_search_roots(course_id: str | None = None) -> list[Path]:
     folders = [course_folder_name(course_id)] if course_id else [course_folder_name(c["id"]) for c in COURSES.values()]
+    if not course_id or course_id == "copd":
+        if "COPD" not in folders:
+            folders.append("COPD")
     roots: list[Path] = []
     certs = ROOT / "certificates"
     parent = certificates_root()
@@ -784,6 +788,38 @@ def od_download(session: dict, filename: str, folder_rel: str | None = None) -> 
     return od_http("GET", url, headers={"Cookie": "FedAuth=" + session["fed"]})
 
 
+def od_folder_meta(session: dict, folder_rel: str) -> dict:
+    folder = quote(folder_rel, safe="/")
+    try:
+        raw = od_http(
+            "GET",
+            session["site"]
+            + "/_api/web/GetFolderByServerRelativeUrl(@p)?@p='"
+            + folder
+            + "'&$select=Name,Exists,UniqueId,ServerRelativeUrl",
+            headers={
+                "Accept": "application/json;odata=verbose",
+                "Cookie": "FedAuth=" + session["fed"],
+            },
+        )
+    except urllib.error.HTTPError as err:
+        if err.code in (404, 400):
+            return {"exists": False, "name": "", "unique_id": "", "url": ""}
+        raise
+    info = json.loads(raw.decode("utf-8")).get("d") or {}
+    unique = str(info.get("UniqueId") or "").strip("{}")
+    return {
+        "exists": bool(info.get("Exists")),
+        "name": str(info.get("Name") or ""),
+        "unique_id": unique,
+        "url": str(info.get("ServerRelativeUrl") or ""),
+    }
+
+
+def od_folder_exists(session: dict, folder_rel: str) -> bool:
+    return bool(od_folder_meta(session, folder_rel).get("exists"))
+
+
 def od_put(session: dict, filename: str, content: bytes, folder_rel: str | None = None) -> None:
     site = session["site"]
     target = folder_rel or session["folder_rel"]
@@ -793,28 +829,30 @@ def od_put(session: dict, filename: str, content: bytes, folder_rel: str | None 
         "Cookie": "FedAuth=" + session["fed"],
         "X-RequestDigest": session["digest"],
     }
-    folder = quote(target, safe="/")
-    endpoints = [
-        (
-            site
-            + "/_api/web/GetFolderByServerRelativeUrl(@p)/Files/add(overwrite=true,url=@f)"
-            + "?@p='"
-            + folder
-            + "'&@f='"
-            + filename
-            + "'"
-        )
-    ]
-    guid = session.get("folder_guid") or ""
-    if guid and target == session["folder_rel"]:
+    meta = od_folder_meta(session, target)
+    if not meta.get("exists"):
+        raise OSError("OneDrive folder does not exist")
+    endpoints = []
+    guid = meta.get("unique_id") or ""
+    if guid:
         endpoints.append(
             site
             + "/_api/web/GetFolderById(guid'"
             + guid
             + "')/Files/add(overwrite=true,url=@f)?@f='"
-            + filename
+            + quote(filename, safe="")
             + "'"
         )
+    full = urlparse(session["site"]).path.rstrip("/") + "/" + target
+    endpoints.append(
+        site
+        + "/_api/web/GetFolderByServerRelativePath(decodedurl=@p)/Files/add(overwrite=true,url=@f)"
+        + "?@p='"
+        + quote(full, safe="/")
+        + "'&@f='"
+        + quote(filename, safe="")
+        + "'"
+    )
     last_error: OSError | None = None
     for endpoint in endpoints:
         try:
@@ -829,36 +867,22 @@ def od_put(session: dict, filename: str, content: bytes, folder_rel: str | None 
     raise OSError("OneDrive upload failed")
 
 
-def od_folder_exists(session: dict, folder_rel: str) -> bool:
-    folder = quote(folder_rel, safe="/")
-    try:
-        raw = od_http(
-            "GET",
-            session["site"]
-            + "/_api/web/GetFolderByServerRelativeUrl(@p)?@p='"
-            + folder
-            + "'&$select=Name,Exists",
-            headers={
-                "Accept": "application/json;odata=verbose",
-                "Cookie": "FedAuth=" + session["fed"],
-            },
-        )
-    except urllib.error.HTTPError as err:
-        if err.code in (404, 400):
-            return False
-        raise
-    info = json.loads(raw.decode("utf-8")).get("d") or {}
-    return bool(info.get("Exists"))
+def od_share_name(session: dict) -> str:
+    return session["folder_rel"].rstrip("/").split("/")[-1]
 
 
-def od_ensure_child(session: dict, child: str) -> str:
-    parent = session["folder_rel"]
-    rel = parent.rstrip("/") + "/" + child
+def od_share_is_certificates_root(session: dict) -> bool:
+    return od_share_name(session).lower() == "certificates"
+
+
+def od_ensure_child(session: dict, child: str, parent: str | None = None) -> str:
+    parent = (parent or session["folder_rel"]).rstrip("/")
+    rel = parent + "/" + child
     cache = session.setdefault("course_folders", {})
-    if child in cache:
-        return cache[child]
+    if rel in cache:
+        return cache[rel]
     if od_folder_exists(session, rel):
-        cache[child] = rel
+        cache[rel] = rel
         return rel
     headers = {
         "Accept": "application/json;odata=verbose",
@@ -882,7 +906,7 @@ def od_ensure_child(session: dict, child: str) -> str:
             raise
     if not od_folder_exists(session, rel):
         raise OSError("Could not create the OneDrive {} folder".format(child))
-    cache[child] = rel
+    cache[rel] = rel
     return rel
 
 
@@ -905,7 +929,34 @@ def get_od_session() -> dict:
 
 
 def od_course_folder(session: dict, course_id: str) -> str:
-    return od_ensure_child(session, course_folder_name(course_id))
+    """certificates / {course} / {env} when the share is the certificates parent."""
+    course = course_folder_name(course_id)
+    env = attend_env()
+    if env not in ("dev", "live"):
+        env = "dev"
+    if not od_share_is_certificates_root(session):
+        raise OSError(
+            "OneDrive share is '{}', not the certificates folder. "
+            "Share the parent certificates folder so files go in copd/dev and heart failure/dev.".format(
+                od_share_name(session)
+            )
+        )
+    course_rel = od_ensure_child(session, course)
+    dest = od_ensure_child(session, env, parent=course_rel)
+    leaf = dest.rstrip("/").split("/")[-1].lower()
+    if leaf not in ("dev", "live"):
+        raise OSError("Attendance files must go in a dev or live folder, not {}".format(leaf))
+    return dest
+
+
+def od_path_in_share(session: dict, folder_rel: str, filename: str) -> str:
+    root = session["folder_rel"].rstrip("/")
+    dest = (folder_rel or root).rstrip("/")
+    if dest == root:
+        return filename
+    if dest.startswith(root + "/"):
+        return dest[len(root) + 1 :] + "/" + filename
+    return filename
 
 
 def od_upload(filename: str, content: bytes, course_id: str = "") -> dict:
@@ -931,7 +982,8 @@ def od_upload(filename: str, content: bytes, course_id: str = "") -> dict:
 
 def od_file_web_url(session: dict, filename: str, course_id: str = "") -> str:
     share, _folder = attend_config()
-    nested = (course_folder_name(course_id) + "/" + filename) if course_id else filename
+    folder_rel = od_course_folder(session, course_id) if course_id else session["folder_rel"]
+    nested = od_path_in_share(session, folder_rel, filename)
     token = encode_share_url(share) if share else ""
     if token:
         try:
@@ -946,7 +998,6 @@ def od_file_web_url(session: dict, filename: str, course_id: str = "") -> str:
                 return web
         except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError):
             pass
-    folder_rel = od_course_folder(session, course_id) if course_id else session["folder_rel"]
     rel = urlparse(session["site"]).path.rstrip("/") + "/" + folder_rel + "/" + filename
     try:
         raw = od_http(
@@ -1103,10 +1154,22 @@ def collect_attendance_rows(course_id: str) -> list[dict]:
             continue
     try:
         session = get_od_session()
-        child = session["folder_rel"].rstrip("/") + "/" + course_folder_name(course_id)
+        root = session["folder_rel"].rstrip("/")
+        course = course_folder_name(course_id)
+        env = attend_env()
+        folders = [
+            root + "/" + course + "/" + env,
+            root + "/" + course + "/dev",
+            root + "/" + course + "/live",
+            root + "/" + course,
+            root + "/heart failure",
+            root + "/copd",
+            root + "/COPD",
+            root,
+        ]
         named: list[tuple[str, str]] = []
         seen: set[str] = set()
-        for folder_rel in (child, session["folder_rel"]):
+        for folder_rel in folders:
             for filename in od_list_names(session, folder_rel):
                 if not filename.startswith(prefix) or not filename.lower().endswith(".csv"):
                     continue
@@ -1213,12 +1276,12 @@ def start_session_file(room: Room, presenter: str = "", course_id: str = "copd")
                 with LOCK:
                     room.session_file = written
             save_session_bind(room)
-            print("Attendance file [{}]: {} / {}".format(room.id, course_folder_name(course), name), flush=True)
+            print("Attendance file [{}]: {}/{}/{}".format(room.id, course_folder_name(course), attend_env(), name), flush=True)
             return name, ""
         except (OSError, urllib.error.URLError, TimeoutError, ValueError, KeyError, json.JSONDecodeError) as err:
             print("OneDrive upload: {}".format(err), flush=True)
-            return None, "Could not create the file in the OneDrive {} folder: {}".format(
-                course_folder_name(course), err
+            return None, "Could not create the file in the OneDrive {}/{} folder: {}".format(
+                course_folder_name(course), attend_env(), err
             )
     try:
         written = write_course_copies(course, name, body)
@@ -1951,6 +2014,7 @@ def main() -> None:
     env = attend_env()
     if share:
         print("  Attendance: certificates/{{course}}/{}".format(env), flush=True)
+        print("  OneDrive share must be the parent certificates folder, not certificates/dev or COPD/dev.", flush=True)
         for course in COURSES.values():
             print("    {}: {}".format(course["folder"], ROOT / "certificates" / course["folder"] / env), flush=True)
     elif folder:

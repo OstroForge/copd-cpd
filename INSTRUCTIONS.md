@@ -89,7 +89,7 @@ Use this when you are not presenting from this laptop, or when Teams needs a pub
 | GitHub copy | https://ostroforge.github.io/copd-cpd/ |
 | GitHub COPD handout | https://ostroforge.github.io/copd-cpd/copd/handout.html |
 | Source code | https://github.com/OstroForge/copd-cpd |
-| Render dashboard | https://dashboard.render.com/web/srv-dalud967bikc73akh3bg |
+| Render dashboard (live Hub) | https://dashboard.render.com/web/srv-dalud967bikc73akh3bg |
 
 Hub staff **do not need a Render account**. Each facilitator has their own PIN. Local or hosted presenter view asks for it. That PIN is also their name on the attendance file, so they are not asked who is delivering.
 
@@ -101,7 +101,43 @@ On Render, set `PRESENTERS` to the same list as `PIN:Full Name;PIN:Full Name`. D
 
 Free Render instances sleep after a quiet spell. The first open can take about a minute.
 
-The live hostname is **hub-cpd.onrender.com**. In the Render dashboard, add a second web service named exactly `hub-cpd` from this GitHub repo (same `python serve.py`, copy `PRESENTERS` and `ATTEND_SHARE_URL` from the existing service). Keep the current `copd-cpd` service running so https://copd-cpd.onrender.com/ can forward. Do not put PINs in this public file.
+## Test site (this branch, not live)
+
+Use this to try Heart Failure and the new folder layout **without merging to `main`**. Live `https://hub-cpd.onrender.com/` stays on `main`.
+
+Create it once in the Render dashboard (signed in as ostroforge@outlook.com):
+
+1. [New Web Service](https://dashboard.render.com/select-repo?type=web)
+2. Repository: **OstroForge/copd-cpd**
+3. Name: **hub-cpd-test**
+4. Branch: **heart-failure-cpd** (not `main`)
+5. Region: Frankfurt
+6. Runtime: Python 3
+7. Build command: `pip install -r requirements.txt`
+8. Start command: `python serve.py`
+9. Health check path: `/healthz`
+10. Instance type: Free
+
+Environment variables (Environment tab). Copy **PRESENTERS** from the live `hub-cpd` service — do not paste PINs into chat or this file. Then add:
+
+| Key | Value |
+| --- | --- |
+| `PYTHON_VERSION` | `3.12.0` |
+| `PUBLIC_URL` | `https://hub-cpd-test.onrender.com` |
+| `ATTEND_ENV` | `dev` |
+| `ATTEND_SHARE_URL` | the **DEV** OneDrive share from `attend-folder.txt` (the `#DEV` block), not the LIVE one |
+
+Create Web Service. First build takes a few minutes. After that:
+
+| What | URL |
+| --- | --- |
+| Test home | https://hub-cpd-test.onrender.com/ |
+| Test presenter | https://hub-cpd-test.onrender.com/?course=hf&view=presenter |
+| Test COPD | https://hub-cpd-test.onrender.com/?course=copd&view=self |
+
+Later commits on `heart-failure-cpd` update this test site only. Merging to `main` is what updates the live Hub.
+
+Keep the current `copd-cpd` service running so https://copd-cpd.onrender.com/ can forward.
 
 ## Accounts
 

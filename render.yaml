@@ -15,6 +15,24 @@ services:
       - key: HOST_TOKEN
         generateValue: true
   - type: web
+    name: hub-cpd-test
+    runtime: python
+    region: frankfurt
+    plan: free
+    branch: heart-failure-cpd
+    buildCommand: pip install -r requirements.txt
+    startCommand: python serve.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: PUBLIC_URL
+        value: https://hub-cpd-test.onrender.com
+      - key: ATTEND_ENV
+        value: "dev"
+      - key: HOST_TOKEN
+        generateValue: true
+  - type: web
     name: copd-cpd
     runtime: python
     region: frankfurt

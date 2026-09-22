@@ -426,6 +426,9 @@ def attend_dir() -> Path | None:
 
 
 def attend_env() -> str:
+    forced = (os.environ.get("ATTEND_ENV") or "").strip().lower()
+    if forced in ("dev", "live"):
+        return forced
     if (os.environ.get("ATTEND_SHARE_URL") or "").strip() or os.environ.get("RENDER"):
         return "live"
     return "dev"

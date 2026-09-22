@@ -829,30 +829,37 @@ def od_put(session: dict, filename: str, content: bytes, folder_rel: str | None 
     raise OSError("OneDrive upload failed")
 
 
+def od_folder_exists(session: dict, folder_rel: str) -> bool:
+    folder = quote(folder_rel, safe="/")
+    try:
+        raw = od_http(
+            "GET",
+            session["site"]
+            + "/_api/web/GetFolderByServerRelativeUrl(@p)?@p='"
+            + folder
+            + "'&$select=Name,Exists",
+            headers={
+                "Accept": "application/json;odata=verbose",
+                "Cookie": "FedAuth=" + session["fed"],
+            },
+        )
+    except urllib.error.HTTPError as err:
+        if err.code in (404, 400):
+            return False
+        raise
+    info = json.loads(raw.decode("utf-8")).get("d") or {}
+    return bool(info.get("Exists"))
+
+
 def od_ensure_child(session: dict, child: str) -> str:
     parent = session["folder_rel"]
     rel = parent.rstrip("/") + "/" + child
     cache = session.setdefault("course_folders", {})
     if child in cache:
         return cache[child]
-    try:
-        folder = quote(rel, safe="/")
-        od_http(
-            "GET",
-            session["site"]
-            + "/_api/web/GetFolderByServerRelativeUrl(@p)?@p='"
-            + folder
-            + "'&$select=Name",
-            headers={
-                "Accept": "application/json;odata=verbose",
-                "Cookie": "FedAuth=" + session["fed"],
-            },
-        )
+    if od_folder_exists(session, rel):
         cache[child] = rel
         return rel
-    except urllib.error.HTTPError as err:
-        if err.code not in (404, 400):
-            raise
     headers = {
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose",
@@ -868,7 +875,13 @@ def od_ensure_child(session: dict, child: str) -> str:
         + quote(child, safe="")
         + "'"
     )
-    od_http("POST", endpoint, data=b"", headers=headers)
+    try:
+        od_http("POST", endpoint, data=b"", headers=headers)
+    except urllib.error.HTTPError as err:
+        if err.code not in (409, 400) or not od_folder_exists(session, rel):
+            raise
+    if not od_folder_exists(session, rel):
+        raise OSError("Could not create the OneDrive {} folder".format(child))
     cache[child] = rel
     return rel
 
